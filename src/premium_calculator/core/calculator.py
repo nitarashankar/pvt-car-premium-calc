@@ -25,137 +25,199 @@ class PremiumCalculator:
     
     def calculate(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Calculate premium for given input data
+        Calculate premium for given input data - matches Excel exactly (all 86 fields)
         
         Args:
-            input_data: Dictionary containing all input fields
+            input_data: Dictionary containing all input fields (26 fields from Excel A-Z)
             
         Returns:
-            Dictionary containing all calculated values and final premium
+            Dictionary containing all calculated values (30 fields AA-BD) 
+            and display fields (30 fields BE-CH) exactly matching Excel
         """
-        # Initialize calculation context
+        # Initialize calculation context - Primary calculations (AA-BD)
         calc = {}
         
-        # Step 1: Calculate vehicle age
+        # Step 1: AA - Calculate vehicle age in years (Excel column AA)
         calc["age_years"] = self._calculate_age(input_data["purchase_date"])
         
-        # Step 2: Get OD base rate
+        # Step 2: AB - Get OD base rate (Excel column AB)
         calc["od_base_rate_percent"] = self.rate_lookup.get_od_base_rate(
             calc["age_years"],
             input_data["zone"],
             input_data["cc_category"]
         )
         
-        # Step 3: Calculate Basic OD Premium
+        # Step 3: AC - Calculate Basic OD Premium (Excel column AC)
         calc["basic_od_premium"] = self._round(
             input_data["idv"] * calc["od_base_rate_percent"] / 100
         )
         
-        # Step 4: Calculate all OD add-on premiums
+        # Step 4: AD-AS - Calculate all OD add-on premiums (Excel columns AD-AS)
+        # AD - Nil Dep Premium
         calc["nil_dep_premium"] = self._calculate_nil_dep(
             input_data, calc["basic_od_premium"], calc["age_years"]
         )
         
+        # AE - Engine and Gearbox Protection Premium
         calc["engine_protection_premium"] = self._calculate_addon_percentage_idv(
             "engine_protection", input_data, calc["age_years"]
         )
         
+        # AF - Road Side Assistance
         calc["road_side_assistance_premium"] = self._calculate_flat_addon(
             "road_side_assistance", input_data
         )
         
+        # AG - Return to Invoice Premium
         calc["return_to_invoice_premium"] = self._calculate_addon_percentage_idv(
             "return_to_invoice", input_data, calc["age_years"]
         )
         
+        # AH - NCB Protect Premium
         calc["ncb_protect_premium"] = self._calculate_addon_percentage_idv(
             "ncb_protect", input_data, calc["age_years"]
         )
         
+        # AI - Consumables Premium
         calc["consumables_premium"] = self._calculate_addon_percentage_idv(
             "consumables", input_data, calc["age_years"]
         )
         
+        # AJ - Geographical Area Extension OD Premium
         calc["geo_extension_od_premium"] = self._calculate_flat_addon(
             "geo_extension_od", input_data
         )
         
+        # AK - Built in CNG/LPG OD Premium
         calc["builtin_cng_od_premium"] = self._calculate_builtin_cng(
             input_data, calc["basic_od_premium"], calc["age_years"]
         )
         
+        # AL - CNG/LPG OD Premium
         calc["cng_lpg_od_premium"] = self._calculate_cng_lpg_si(input_data)
         
+        # AM - Loss of Key (SI - 25k) Premium
         calc["loss_of_key_premium"] = self._calculate_flat_addon(
             "loss_of_key", input_data
         )
         
+        # AN - Additional Towing Charges Premium
         calc["towing_charges_premium"] = self._calculate_flat_addon(
             "additional_towing", input_data
         )
         
+        # AO - Medical Expenses Premium
         calc["medical_expenses_premium"] = self._calculate_flat_age_based(
             "medical_expenses", input_data, calc["age_years"]
         )
         
+        # AP - Tyre and RIM protector Premium
         calc["tyre_rim_premium"] = self._calculate_si_based_flat(
             "tyre_rim", input_data
         )
         
+        # AQ - Personal Effects (SI - 10k) Premium
         calc["personal_effects_premium"] = self._calculate_flat_addon(
             "personal_effects", input_data
         )
         
+        # AR - Courtesy Car Cover Premium
         calc["courtesy_car_premium"] = self._calculate_flat_age_based(
             "courtesy_car", input_data, calc["age_years"]
         )
         
+        # AS - Road Tax Premium
         calc["road_tax_premium"] = self._calculate_road_tax(input_data)
         
-        # Step 5: Calculate TP premiums
+        # Step 5: AT-AX - Calculate TP premiums (Excel columns AT-AX)
+        # AT - Basic TP
         calc["basic_tp_premium"] = self.rate_lookup.get_tp_base_rate(
             input_data["cc_category"]
         )
         
+        # AU - CPA owner Driver Premium
         calc["cpa_owner_premium"] = self._calculate_flat_addon(
             "cpa_owner_driver", input_data
         )
         
+        # AV - LL to paid Driver
         calc["ll_paid_driver_premium"] = self._calculate_flat_addon(
             "ll_paid_driver", input_data
         )
         
+        # AW - CNG/LPG TP Premium
         calc["cng_lpg_tp_premium"] = self._calculate_cng_lpg_tp(input_data)
         
+        # AX - Geographical Area Extension TP Premium
         calc["geo_extension_tp_premium"] = self._calculate_flat_addon(
             "geo_extension_tp", input_data
         )
         
-        # Step 6: Calculate discounts
+        # Step 6: AY-AZ - Calculate discounts (Excel columns AY-AZ)
+        # AY - OD Discount
         calc["od_discount_amount"] = self._round(
-            calc["basic_od_premium"] * input_data["od_discount_percent"] / 100
+            calc["basic_od_premium"] * input_data.get("od_discount_percent", 0) / 100
         )
         
+        # AZ - NCB Discount
         calc["ncb_discount_amount"] = self._calculate_ncb_discount(
             input_data, calc
         )
         
-        # Step 7: Calculate net premium
+        # Step 7: BA - Calculate net premium (Excel column BA)
         calc["net_premium"] = self._calculate_net_premium(calc)
         
-        # Step 8: Calculate GST
+        # Step 8: BB-BC - Calculate GST (Excel columns BB-BC)
         cgst_rate, sgst_rate = self.rate_lookup.get_gst_rates()
+        # BB - CGST @9%
         calc["cgst"] = self._round(calc["net_premium"] * cgst_rate / 100)
+        # BC - SGST @9%
         calc["sgst"] = self._round(calc["net_premium"] * sgst_rate / 100)
         
-        # Step 9: Calculate total premium
+        # Step 9: BD - Calculate total premium (Excel column BD)
         calc["total_premium"] = self._round(
             calc["net_premium"] + calc["cgst"] + calc["sgst"]
         )
         
+        # Step 10: BE-CH - Create display fields (Excel columns BE-CH) - exact copies of AA-BD
+        display = {
+            # BE-CH are exact copies of AA-BD for display/output section
+            "age_years_display": calc["age_years"],
+            "od_base_rate_percent_display": calc["od_base_rate_percent"],
+            "basic_od_premium_display": calc["basic_od_premium"],
+            "nil_dep_premium_display": calc["nil_dep_premium"],
+            "engine_protection_premium_display": calc["engine_protection_premium"],
+            "road_side_assistance_premium_display": calc["road_side_assistance_premium"],
+            "return_to_invoice_premium_display": calc["return_to_invoice_premium"],
+            "ncb_protect_premium_display": calc["ncb_protect_premium"],
+            "consumables_premium_display": calc["consumables_premium"],
+            "geo_extension_od_premium_display": calc["geo_extension_od_premium"],
+            "builtin_cng_od_premium_display": calc["builtin_cng_od_premium"],
+            "cng_lpg_od_premium_display": calc["cng_lpg_od_premium"],
+            "loss_of_key_premium_display": calc["loss_of_key_premium"],
+            "towing_charges_premium_display": calc["towing_charges_premium"],
+            "medical_expenses_premium_display": calc["medical_expenses_premium"],
+            "tyre_rim_premium_display": calc["tyre_rim_premium"],
+            "personal_effects_premium_display": calc["personal_effects_premium"],
+            "courtesy_car_premium_display": calc["courtesy_car_premium"],
+            "road_tax_premium_display": calc["road_tax_premium"],
+            "basic_tp_premium_display": calc["basic_tp_premium"],
+            "cpa_owner_premium_display": calc["cpa_owner_premium"],
+            "ll_paid_driver_premium_display": calc["ll_paid_driver_premium"],
+            "cng_lpg_tp_premium_display": calc["cng_lpg_tp_premium"],
+            "geo_extension_tp_premium_display": calc["geo_extension_tp_premium"],
+            "od_discount_amount_display": calc["od_discount_amount"],
+            "ncb_discount_amount_display": calc["ncb_discount_amount"],
+            "net_premium_display": calc["net_premium"],
+            "cgst_display": calc["cgst"],
+            "sgst_display": calc["sgst"],
+            "total_premium_display": calc["total_premium"]
+        }
+        
         return {
-            "inputs": input_data,
-            "calculations": calc,
+            "inputs": input_data,  # A-Z: All 26 input fields
+            "calculations": calc,  # AA-BD: All 30 primary calculation fields
+            "display": display,    # BE-CH: All 30 display fields (copies of calculations)
             "summary": {
                 "net_premium": calc["net_premium"],
                 "cgst": calc["cgst"],

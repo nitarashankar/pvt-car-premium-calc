@@ -183,21 +183,31 @@ class CSVProcessor:
     
     def generate_output_csv(self, results: List[Dict[str, Any]]) -> str:
         """
-        Generate output CSV from calculation results
+        Generate output CSV from calculation results - ALL 86 Excel columns
         
         Args:
             results: List of calculation results
             
         Returns:
-            CSV content as string
+            CSV content as string matching Excel exactly (86 columns total)
         """
         if not results:
             return ""
         
         output = io.StringIO()
         
-        # Define output columns
-        input_fields = list(results[0]["inputs"].keys())
+        # Define output columns matching Excel exactly (A-CH, 86 columns total)
+        # Columns A-Z: Input Fields (26 columns)
+        input_fields = [
+            "policy_type", "vehicle_type", "cc_category", "zone", "purchase_date", "idv",
+            "ncb_percent", "od_discount_percent", "builtin_cng_lpg", "cng_lpg_si",
+            "nil_dep", "return_to_invoice", "ncb_protect", "engine_protection",
+            "consumables", "road_side_assistance", "geo_extension", "road_tax_cover",
+            "courtesy_car", "additional_towing", "medical_expenses", "loss_of_key",
+            "tyre_rim_si", "personal_effects", "cpa_owner_driver", "ll_paid_driver"
+        ]
+        
+        # Columns AA-BD: Primary Calculation Fields (30 columns)
         calc_fields = [
             "age_years", "od_base_rate_percent", "basic_od_premium",
             "nil_dep_premium", "engine_protection_premium", "road_side_assistance_premium",
@@ -211,15 +221,32 @@ class CSVProcessor:
             "cgst", "sgst", "total_premium"
         ]
         
-        all_fields = ["row_number"] + input_fields + calc_fields
+        # Columns BE-CH: Display Fields (30 columns) - exact copies of AA-BD
+        display_fields = [f + "_display" for f in calc_fields]
+        
+        # All 86 columns
+        all_fields = ["row_number"] + input_fields + calc_fields + display_fields
         
         writer = csv.DictWriter(output, fieldnames=all_fields)
         writer.writeheader()
         
         for result in results:
             row = {"row_number": result.get("row_number", "")}
+            
+            # Add input fields (A-Z)
             row.update(result["inputs"])
+            
+            # Add calculation fields (AA-BD)
             row.update(result["calculations"])
+            
+            # Add display fields (BE-CH) - copies of calculations
+            if "display" in result:
+                row.update(result["display"])
+            else:
+                # Fallback: create display fields from calculations
+                for field in calc_fields:
+                    row[field + "_display"] = result["calculations"].get(field, 0)
+            
             writer.writerow(row)
         
         return output.getvalue()
