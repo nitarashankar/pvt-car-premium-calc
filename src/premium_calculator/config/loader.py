@@ -2,6 +2,7 @@
 Configuration Loader - Loads and manages JSON configuration files
 """
 import json
+import os
 from pathlib import Path
 from typing import Dict, Any, Optional
 from datetime import datetime
@@ -19,14 +20,33 @@ class ConfigurationLoader:
                        Defaults to ../../../config from this file
         """
         if config_dir is None:
-            # Default to config directory at repository root
-            current_file = Path(__file__)
-            self.config_dir = current_file.parent.parent.parent.parent / "config"
+            # Try environment variable first (for Docker/Railway)
+            env_config_dir = os.getenv('CONFIG_DIR')
+            if env_config_dir:
+                self.config_dir = Path(env_config_dir)
+            else:
+                # Default to config directory at repository root
+                current_file = Path(__file__)
+                # Go up from src/premium_calculator/config/loader.py to root
+                self.config_dir = current_file.parent.parent.parent.parent / "config"
+                
+                # Fallback: if that doesn't exist, try /app/config (Docker)
+                if not self.config_dir.exists():
+                    docker_config = Path("/app/config")
+                    if docker_config.exists():
+                        self.config_dir = docker_config
         else:
             self.config_dir = Path(config_dir)
         
         if not self.config_dir.exists():
-            raise FileNotFoundError(f"Configuration directory not found: {self.config_dir}")
+            raise FileNotFoundError(
+                f"Configuration directory not found: {self.config_dir}\n"
+                f"Tried paths:\n"
+                f"  - Environment variable CONFIG_DIR: {os.getenv('CONFIG_DIR')}\n"
+                f"  - Calculated path: {Path(__file__).parent.parent.parent.parent / 'config'}\n"
+                f"  - Docker fallback: /app/config\n"
+                f"Current working directory: {Path.cwd()}"
+            )
         
         self._config_cache = {}
     

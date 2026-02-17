@@ -40,10 +40,36 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# Initialize calculator
-calculator = PremiumCalculator()
-csv_processor = CSVProcessor(calculator)
-config_loader = ConfigurationLoader()
+# Initialize calculator and configuration
+print("=" * 60)
+print("Initializing Motor Premium Calculator API...")
+print(f"Working directory: {os.getcwd()}")
+print(f"Python path: {os.path.dirname(__file__)}")
+
+try:
+    print("Loading configuration...")
+    config_loader = ConfigurationLoader()
+    print(f"✓ Configuration loaded from: {config_loader.config_dir}")
+    
+    print("Initializing calculator...")
+    calculator = PremiumCalculator()
+    print("✓ Calculator initialized")
+    
+    print("Initializing CSV processor...")
+    csv_processor = CSVProcessor(calculator)
+    print("✓ CSV processor initialized")
+    
+    print("=" * 60)
+    print("API initialization complete!")
+    print("=" * 60)
+    
+except Exception as e:
+    print("=" * 60)
+    print(f"ERROR during API initialization: {e}")
+    print("=" * 60)
+    import traceback
+    traceback.print_exc()
+    raise
 
 
 class PremiumInput(BaseModel):
