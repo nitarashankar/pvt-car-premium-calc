@@ -1,0 +1,12 @@
+# Railway Backend Configuration
+
+# Let Railway auto-detect Python from requirements.txt
+# This file is just for documentation
+
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "uvicorn src.premium_calculator.api:app --host 0.0.0.0 --port $PORT"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
