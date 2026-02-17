@@ -1,0 +1,27 @@
+{
+  "version": "2025-v1",
+  "effective_date": "2025-01-01",
+  "description": "Discount rules and eligibility",
+  "discounts": {
+    "od_discount": {
+      "name": "Own Damage Discount",
+      "applicable_to": [
+        "basic_od"
+      ],
+      "type": "percentage_input",
+      "description": "User-provided OD discount percentage"
+    },
+    "ncb": {
+      "name": "No Claim Bonus",
+      "applicable_to": [
+        "basic_od_after_discount",
+        "nil_dep",
+        "return_to_invoice",
+        "geo_extension_od",
+        "builtin_cng_od"
+      ],
+      "type": "percentage_input",
+      "description": "NCB applied after OD discount on eligible components"
+    }
+  }
+}

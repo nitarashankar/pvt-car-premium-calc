@@ -1,0 +1,8 @@
+{
+  "version": "2025-v1",
+  "effective_date": "2025-01-01",
+  "description": "GST configuration",
+  "cgst_percent": 9,
+  "sgst_percent": 9,
+  "applicable_to": "net_premium"
+}

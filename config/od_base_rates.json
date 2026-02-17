@@ -1,0 +1,133 @@
+{
+  "version": "2025-v1",
+  "effective_date": "2025-01-01",
+  "description": "OD Base Rates based on vehicle age, RTO zone, and cubic capacity",
+  "rates": [
+    {
+      "age_min": 0,
+      "age_max": 5,
+      "zone": "A",
+      "cc_category": "upto_1000cc",
+      "rate_percent": 3.127
+    },
+    {
+      "age_min": 0,
+      "age_max": 5,
+      "zone": "A",
+      "cc_category": "1000cc_1500cc",
+      "rate_percent": 3.283
+    },
+    {
+      "age_min": 0,
+      "age_max": 5,
+      "zone": "A",
+      "cc_category": "above_1500cc",
+      "rate_percent": 3.44
+    },
+    {
+      "age_min": 0,
+      "age_max": 5,
+      "zone": "B",
+      "cc_category": "upto_1000cc",
+      "rate_percent": 3.039
+    },
+    {
+      "age_min": 0,
+      "age_max": 5,
+      "zone": "B",
+      "cc_category": "1000cc_1500cc",
+      "rate_percent": 3.191
+    },
+    {
+      "age_min": 0,
+      "age_max": 5,
+      "zone": "B",
+      "cc_category": "above_1500cc",
+      "rate_percent": 3.343
+    },
+    {
+      "age_min": 5,
+      "age_max": 10,
+      "zone": "A",
+      "cc_category": "upto_1000cc",
+      "rate_percent": 3.283
+    },
+    {
+      "age_min": 5,
+      "age_max": 10,
+      "zone": "A",
+      "cc_category": "1000cc_1500cc",
+      "rate_percent": 3.447
+    },
+    {
+      "age_min": 5,
+      "age_max": 10,
+      "zone": "A",
+      "cc_category": "above_1500cc",
+      "rate_percent": 3.612
+    },
+    {
+      "age_min": 5,
+      "age_max": 10,
+      "zone": "B",
+      "cc_category": "upto_1000cc",
+      "rate_percent": 3.191
+    },
+    {
+      "age_min": 5,
+      "age_max": 10,
+      "zone": "B",
+      "cc_category": "1000cc_1500cc",
+      "rate_percent": 3.351
+    },
+    {
+      "age_min": 5,
+      "age_max": 10,
+      "zone": "B",
+      "cc_category": "above_1500cc",
+      "rate_percent": 3.51
+    },
+    {
+      "age_min": 10,
+      "age_max": 100,
+      "zone": "A",
+      "cc_category": "upto_1000cc",
+      "rate_percent": 3.362
+    },
+    {
+      "age_min": 10,
+      "age_max": 100,
+      "zone": "A",
+      "cc_category": "1000cc_1500cc",
+      "rate_percent": 3.529
+    },
+    {
+      "age_min": 10,
+      "age_max": 100,
+      "zone": "A",
+      "cc_category": "above_1500cc",
+      "rate_percent": 3.698
+    },
+    {
+      "age_min": 10,
+      "age_max": 100,
+      "zone": "B",
+      "cc_category": "upto_1000cc",
+      "rate_percent": 3.267
+    },
+    {
+      "age_min": 10,
+      "age_max": 100,
+      "zone": "B",
+      "cc_category": "1000cc_1500cc",
+      "rate_percent": 3.43
+    },
+    {
+      "age_min": 10,
+      "age_max": 100,
+      "zone": "B",
+      "cc_category": "above_1500cc",
+      "rate_percent": 3.596
+    }
+  ]
+}

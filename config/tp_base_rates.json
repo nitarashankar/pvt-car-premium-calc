@@ -1,0 +1,19 @@
+{
+  "version": "2025-v1",
+  "effective_date": "2025-01-01",
+  "description": "Third Party Base Rates by cubic capacity",
+  "rates": [
+    {
+      "cc_category": "upto_1000cc",
+      "premium": 2094
+    },
+    {
+      "cc_category": "1000cc_1500cc",
+      "premium": 3416
+    },
+    {
+      "cc_category": "above_1500cc",
+      "premium": 7897
+    }
+  ]
+}
