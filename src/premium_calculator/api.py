@@ -4,11 +4,12 @@ FastAPI Web Application for Premium Calculator
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field, validator
-from typing import Dict, Any, List, Optional
+from pydantic import BaseModel, Field, field_validator
+from typing import Dict, Any
 import io
 import json
 import os
+from pathlib import Path
 
 from .core.calculator import PremiumCalculator
 from .core.csv_processor import CSVProcessor, InputValidator
@@ -22,15 +23,6 @@ app = FastAPI(
 )
 
 # Configure CORS - allow all origins for Railway deployment
-# Note: In production with credentials, you must specify exact origins
-# For now, we'll allow all origins without credentials
-allowed_origins = [
-    "http://localhost:3000",  # Local development
-    "http://localhost:8000",
-    "https://pvt-car-premium-calc-production.up.railway.app",  # Production frontend
-    "*"  # Allow any other origin
-]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allow all origins
@@ -101,14 +93,16 @@ class PremiumInput(BaseModel):
     cpa_owner_driver: int = Field(0, ge=0, le=1)
     ll_paid_driver: int = Field(0, ge=0, le=1)
     
-    @validator('cc_category')
+    @field_validator('cc_category')
+    @classmethod
     def validate_cc(cls, v):
         valid = ["upto_1000cc", "1000cc_1500cc", "above_1500cc"]
         if v not in valid:
             raise ValueError(f"Must be one of {valid}")
         return v
     
-    @validator('zone')
+    @field_validator('zone')
+    @classmethod
     def validate_zone(cls, v):
         if v not in ["A", "B"]:
             raise ValueError("Must be A or B")
@@ -149,7 +143,7 @@ def calculate_premium(input_data: PremiumInput):
     """
     try:
         # Convert to dict
-        data = input_data.dict()
+        data = input_data.model_dump()
         
         # Validate
         errors = InputValidator.validate_input(data)
@@ -273,10 +267,6 @@ def update_od_rates(config: Dict[str, Any]):
         config: New OD rates configuration
     """
     try:
-        # Save to file
-        import json
-        from pathlib import Path
-        
         config_path = Path(__file__).parent.parent.parent / "config" / "od_base_rates.json"
         with open(config_path, 'w') as f:
             json.dump(config, f, indent=2)
@@ -299,9 +289,6 @@ def update_addon_config(config: Dict[str, Any]):
         config: New add-on configuration
     """
     try:
-        import json
-        from pathlib import Path
-        
         config_path = Path(__file__).parent.parent.parent / "config" / "addon_premiums.json"
         with open(config_path, 'w') as f:
             json.dump(config, f, indent=2)
