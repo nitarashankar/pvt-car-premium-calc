@@ -1,6 +1,8 @@
 """
 Test Premium Calculator against Excel sample data
 """
+import csv
+import io
 import sys
 from pathlib import Path
 
@@ -264,9 +266,7 @@ def test_csv_processing_end_to_end():
     output = proc.generate_output_csv(results["results"])
 
     # Parse with csv module for reliable column handling
-    import csv as csv_mod
-    import io as io_mod
-    reader = csv_mod.reader(io_mod.StringIO(output))
+    reader = csv.reader(io.StringIO(output))
     header_cols = next(reader)
     data_rows = list(reader)
 
