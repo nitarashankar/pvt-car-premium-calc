@@ -3,7 +3,7 @@
  */
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'development' ? '' : 'http://localhost:8000');
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -15,7 +15,14 @@ const api = axios.create({
 export const calculatorAPI = {
   // Calculate premium for single input
   calculatePremium: async (inputData) => {
-    const response = await api.post('/calculate', inputData);
+    const payload = { ...inputData };
+    const ncbValue = Number(payload.ncb_percent);
+
+    if (!Number.isNaN(ncbValue)) {
+      payload.ncb_percent = ncbValue > 1 ? ncbValue / 100 : ncbValue;
+    }
+
+    const response = await api.post('/calculate', payload);
     return response.data;
   },
 
