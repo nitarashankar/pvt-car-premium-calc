@@ -1,0 +1,2 @@
+policy_type,vehicle_type,cc_category,zone,purchase_date,idv,ncb_percent,od_discount_percent,builtin_cng_lpg,cng_lpg_si,nil_dep,return_to_invoice,ncb_protect,engine_protection,consumables,road_side_assistance,geo_extension,road_tax_cover,courtesy_car,additional_towing,medical_expenses,loss_of_key,tyre_rim_si,personal_effects,cpa_owner_driver,ll_paid_driver
+Package,New,1000cc_1500cc,A,2024-01-01,125000,20,0,0,0,1,1,0,1,1,1,0,0,0,0,1,0,0,1,1,0

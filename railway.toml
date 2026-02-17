@@ -1,0 +1,11 @@
+# Railway Backend Configuration - Using Docker
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Don't override Dockerfile CMD - let Docker handle it
+# startCommand is commented out so Dockerfile CMD is used
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

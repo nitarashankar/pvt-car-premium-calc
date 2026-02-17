@@ -1,0 +1,297 @@
+{
+  "version": "2025-v1",
+  "effective_date": "2025-01-01",
+  "description": "Add-on premium rates and calculation rules",
+  "addons": {
+    "nil_dep": {
+      "name": "Zero Depreciation",
+      "category": "od",
+      "calculation_type": "percentage_of_basic_od",
+      "age_based": true,
+      "slabs": [
+        {
+          "age_min": 0,
+          "age_max": 1,
+          "rate_percent": 10
+        },
+        {
+          "age_min": 1,
+          "age_max": 2,
+          "rate_percent": 20
+        },
+        {
+          "age_min": 2,
+          "age_max": 100,
+          "rate_percent": 30
+        }
+      ]
+    },
+    "engine_protection": {
+      "name": "Engine and Gearbox Protection",
+      "category": "od",
+      "calculation_type": "percentage_of_idv",
+      "age_based": true,
+      "slabs": [
+        {
+          "age_min": 0,
+          "age_max": 1,
+          "rate_percent": 0.13
+        },
+        {
+          "age_min": 1,
+          "age_max": 2,
+          "rate_percent": 0.16
+        },
+        {
+          "age_min": 2,
+          "age_max": 3,
+          "rate_percent": 0.21
+        },
+        {
+          "age_min": 3,
+          "age_max": 4,
+          "rate_percent": 0.27
+        },
+        {
+          "age_min": 4,
+          "age_max": 100,
+          "rate_percent": 0.32
+        }
+      ]
+    },
+    "road_side_assistance": {
+      "name": "Road Side Assistance",
+      "category": "od",
+      "calculation_type": "flat",
+      "age_based": false,
+      "premium": 50
+    },
+    "return_to_invoice": {
+      "name": "Return to Invoice",
+      "category": "od",
+      "calculation_type": "percentage_of_idv",
+      "age_based": true,
+      "slabs": [
+        {
+          "age_min": 0,
+          "age_max": 1,
+          "rate_percent": 0.15
+        },
+        {
+          "age_min": 1,
+          "age_max": 2,
+          "rate_percent": 0.2
+        },
+        {
+          "age_min": 2,
+          "age_max": 100,
+          "rate_percent": 0.25
+        }
+      ]
+    },
+    "ncb_protect": {
+      "name": "NCB Protection",
+      "category": "od",
+      "calculation_type": "percentage_of_idv",
+      "age_based": false,
+      "rate_percent": 0.15
+    },
+    "consumables": {
+      "name": "Consumables Cover",
+      "category": "od",
+      "calculation_type": "percentage_of_idv",
+      "age_based": true,
+      "slabs": [
+        {
+          "age_min": 0,
+          "age_max": 1,
+          "rate_percent": 0.1
+        },
+        {
+          "age_min": 1,
+          "age_max": 2,
+          "rate_percent": 0.12
+        },
+        {
+          "age_min": 2,
+          "age_max": 3,
+          "rate_percent": 0.15
+        },
+        {
+          "age_min": 3,
+          "age_max": 4,
+          "rate_percent": 0.17
+        },
+        {
+          "age_min": 4,
+          "age_max": 100,
+          "rate_percent": 0.2
+        }
+      ]
+    },
+    "geo_extension_od": {
+      "name": "Geographical Area Extension (OD)",
+      "category": "od",
+      "calculation_type": "flat",
+      "age_based": false,
+      "premium": 400
+    },
+    "builtin_cng_od": {
+      "name": "Built-in CNG/LPG (OD)",
+      "category": "od",
+      "calculation_type": "percentage_of_basic_od",
+      "age_based": true,
+      "slabs": [
+        {
+          "age_min": 0,
+          "age_max": 1,
+          "rate_percent": 1
+        },
+        {
+          "age_min": 1,
+          "age_max": 2,
+          "rate_percent": 2
+        },
+        {
+          "age_min": 2,
+          "age_max": 100,
+          "rate_percent": 3
+        }
+      ]
+    },
+    "cng_lpg_si": {
+      "name": "External CNG/LPG Kit (OD)",
+      "category": "od",
+      "calculation_type": "percentage_of_si",
+      "age_based": false,
+      "rate_percent": 4
+    },
+    "loss_of_key": {
+      "name": "Loss of Key",
+      "category": "od",
+      "calculation_type": "flat",
+      "age_based": false,
+      "premium": 750
+    },
+    "additional_towing": {
+      "name": "Additional Towing Charges",
+      "category": "od",
+      "calculation_type": "flat",
+      "age_based": false,
+      "premium": 75
+    },
+    "medical_expenses": {
+      "name": "Medical Expenses Cover",
+      "category": "od",
+      "calculation_type": "flat_age_based",
+      "age_based": true,
+      "slabs": [
+        {
+          "age_min": 0,
+          "age_max": 1,
+          "premium": 275
+        },
+        {
+          "age_min": 1,
+          "age_max": 5,
+          "premium": 325
+        },
+        {
+          "age_min": 5,
+          "age_max": 100,
+          "premium": 450
+        }
+      ]
+    },
+    "tyre_rim": {
+      "name": "Tyre and RIM Protector",
+      "category": "od",
+      "calculation_type": "si_based_flat",
+      "age_based": false,
+      "si_slabs": [
+        {
+          "si": 25000,
+          "premium": 1000
+        },
+        {
+          "si": 50000,
+          "premium": 2000
+        },
+        {
+          "si": 100000,
+          "premium": 4000
+        },
+        {
+          "si": 200000,
+          "premium": 8000
+        }
+      ]
+    },
+    "personal_effects": {
+      "name": "Personal Effects",
+      "category": "od",
+      "calculation_type": "flat",
+      "age_based": false,
+      "premium": 500
+    },
+    "courtesy_car": {
+      "name": "Courtesy Car Cover",
+      "category": "od",
+      "calculation_type": "flat_age_based",
+      "age_based": true,
+      "slabs": [
+        {
+          "age_min": 0,
+          "age_max": 1,
+          "premium": 375
+        },
+        {
+          "age_min": 1,
+          "age_max": 5,
+          "premium": 450
+        },
+        {
+          "age_min": 5,
+          "age_max": 100,
+          "premium": 600
+        }
+      ]
+    },
+    "road_tax_cover": {
+      "name": "Road Tax Cover",
+      "category": "od",
+      "calculation_type": "percentage_of_computed",
+      "age_based": false,
+      "base_percent": 20,
+      "rate_percent": 0.25
+    },
+    "cpa_owner_driver": {
+      "name": "CPA Owner Driver",
+      "category": "tp",
+      "calculation_type": "flat",
+      "age_based": false,
+      "premium": 275
+    },
+    "ll_paid_driver": {
+      "name": "Legal Liability to Paid Driver",
+      "category": "tp",
+      "calculation_type": "flat",
+      "age_based": false,
+      "premium": 50
+    },
+    "cng_lpg_tp": {
+      "name": "CNG/LPG (TP)",
+      "category": "tp",
+      "calculation_type": "flat",
+      "age_based": false,
+      "premium": 60
+    },
+    "geo_extension_tp": {
+      "name": "Geographical Area Extension (TP)",
+      "category": "tp",
+      "calculation_type": "flat",
+      "age_based": false,
+      "premium": 100
+    }
+  }
+}

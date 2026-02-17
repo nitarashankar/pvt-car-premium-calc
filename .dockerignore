@@ -1,0 +1,48 @@
+# Ignore node_modules and build artifacts
+node_modules/
+npm-debug.log
+.DS_Store
+
+# Ignore frontend build
+frontend/build/
+frontend/node_modules/
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore docs and test files (optional - comment out if needed in container)
+*.md
+tests/
+scripts/
+
+# Ignore Excel file
+*.xlsx
+
+# Ignore environment files
+.env
+.env.local
+.env.*.local
+
+# Ignore temporary files
+tmp/
+temp/
+*.log
