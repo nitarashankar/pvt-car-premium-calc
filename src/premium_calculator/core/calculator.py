@@ -37,132 +37,219 @@ class PremiumCalculator:
         # Initialize calculation context - Primary calculations (AA-BD)
         calc = {}
         
+        # Normalize policy type (accept both naming conventions)
+        policy_type = self._normalize_policy_type(input_data.get("policy_type", "Package"))
+        
+        # Determine which components to calculate
+        calculate_od = policy_type in ["Package", "Standalone OD"]
+        calculate_tp = policy_type in ["Package", "Third Party"]
+        
         # Step 1: AA - Calculate vehicle age in years (Excel column AA)
         calc["age_years"] = self._calculate_age(input_data["purchase_date"])
         
         # Step 2: AB - Get OD base rate (Excel column AB)
-        calc["od_base_rate_percent"] = self.rate_lookup.get_od_base_rate(
-            calc["age_years"],
-            input_data["zone"],
-            input_data["cc_category"]
-        )
+        # Only calculate if OD is needed
+        if calculate_od:
+            calc["od_base_rate_percent"] = self.rate_lookup.get_od_base_rate(
+                calc["age_years"],
+                input_data["zone"],
+                input_data["cc_category"]
+            )
+        else:
+            calc["od_base_rate_percent"] = 0
         
         # Step 3: AC - Calculate Basic OD Premium (Excel column AC)
-        calc["basic_od_premium"] = self._round(
-            input_data["idv"] * calc["od_base_rate_percent"] / 100
-        )
+        # Only calculate if OD is needed
+        if calculate_od:
+            calc["basic_od_premium"] = self._round(
+                input_data["idv"] * calc["od_base_rate_percent"] / 100
+            )
+        else:
+            calc["basic_od_premium"] = 0
         
         # Step 4: AD-AS - Calculate all OD add-on premiums (Excel columns AD-AS)
-        # AD - Nil Dep Premium
-        calc["nil_dep_premium"] = self._calculate_nil_dep(
-            input_data, calc["basic_od_premium"], calc["age_years"]
-        )
+        # Only calculate OD add-ons if OD is needed
+        if calculate_od:
+            # AD - Nil Dep Premium
+            calc["nil_dep_premium"] = self._calculate_nil_dep(
+                input_data, calc["basic_od_premium"], calc["age_years"]
+            )
+        else:
+            calc["nil_dep_premium"] = 0
         
         # AE - Engine and Gearbox Protection Premium
-        calc["engine_protection_premium"] = self._calculate_addon_percentage_idv(
-            "engine_protection", input_data, calc["age_years"]
-        )
+        if calculate_od:
+            calc["engine_protection_premium"] = self._calculate_addon_percentage_idv(
+                "engine_protection", input_data, calc["age_years"]
+            )
+        else:
+            calc["engine_protection_premium"] = 0
         
         # AF - Road Side Assistance
-        calc["road_side_assistance_premium"] = self._calculate_flat_addon(
-            "road_side_assistance", input_data
-        )
+        if calculate_od:
+            calc["road_side_assistance_premium"] = self._calculate_flat_addon(
+                "road_side_assistance", input_data
+            )
+        else:
+            calc["road_side_assistance_premium"] = 0
         
         # AG - Return to Invoice Premium
-        calc["return_to_invoice_premium"] = self._calculate_addon_percentage_idv(
-            "return_to_invoice", input_data, calc["age_years"]
-        )
+        if calculate_od:
+            calc["return_to_invoice_premium"] = self._calculate_addon_percentage_idv(
+                "return_to_invoice", input_data, calc["age_years"]
+            )
+        else:
+            calc["return_to_invoice_premium"] = 0
         
         # AH - NCB Protect Premium
-        calc["ncb_protect_premium"] = self._calculate_addon_percentage_idv(
-            "ncb_protect", input_data, calc["age_years"]
-        )
+        if calculate_od:
+            calc["ncb_protect_premium"] = self._calculate_addon_percentage_idv(
+                "ncb_protect", input_data, calc["age_years"]
+            )
+        else:
+            calc["ncb_protect_premium"] = 0
         
         # AI - Consumables Premium
-        calc["consumables_premium"] = self._calculate_addon_percentage_idv(
-            "consumables", input_data, calc["age_years"]
-        )
+        if calculate_od:
+            calc["consumables_premium"] = self._calculate_addon_percentage_idv(
+                "consumables", input_data, calc["age_years"]
+            )
+        else:
+            calc["consumables_premium"] = 0
         
         # AJ - Geographical Area Extension OD Premium
-        calc["geo_extension_od_premium"] = self._calculate_flat_addon(
-            "geo_extension_od", input_data
-        )
+        if calculate_od:
+            calc["geo_extension_od_premium"] = self._calculate_flat_addon(
+                "geo_extension_od", input_data
+            )
+        else:
+            calc["geo_extension_od_premium"] = 0
         
         # AK - Built in CNG/LPG OD Premium
-        calc["builtin_cng_od_premium"] = self._calculate_builtin_cng(
-            input_data, calc["basic_od_premium"], calc["age_years"]
-        )
+        if calculate_od:
+            calc["builtin_cng_od_premium"] = self._calculate_builtin_cng(
+                input_data, calc["basic_od_premium"], calc["age_years"]
+            )
+        else:
+            calc["builtin_cng_od_premium"] = 0
         
         # AL - CNG/LPG OD Premium
-        calc["cng_lpg_od_premium"] = self._calculate_cng_lpg_si(input_data)
+        if calculate_od:
+            calc["cng_lpg_od_premium"] = self._calculate_cng_lpg_si(input_data)
+        else:
+            calc["cng_lpg_od_premium"] = 0
         
         # AM - Loss of Key (SI - 25k) Premium
-        calc["loss_of_key_premium"] = self._calculate_flat_addon(
-            "loss_of_key", input_data
-        )
+        if calculate_od:
+            calc["loss_of_key_premium"] = self._calculate_flat_addon(
+                "loss_of_key", input_data
+            )
+        else:
+            calc["loss_of_key_premium"] = 0
         
         # AN - Additional Towing Charges Premium
-        calc["towing_charges_premium"] = self._calculate_flat_addon(
-            "additional_towing", input_data
-        )
+        if calculate_od:
+            calc["towing_charges_premium"] = self._calculate_flat_addon(
+                "additional_towing", input_data
+            )
+        else:
+            calc["towing_charges_premium"] = 0
         
         # AO - Medical Expenses Premium
-        calc["medical_expenses_premium"] = self._calculate_flat_age_based(
-            "medical_expenses", input_data, calc["age_years"]
-        )
+        if calculate_od:
+            calc["medical_expenses_premium"] = self._calculate_flat_age_based(
+                "medical_expenses", input_data, calc["age_years"]
+            )
+        else:
+            calc["medical_expenses_premium"] = 0
         
         # AP - Tyre and RIM protector Premium
-        calc["tyre_rim_premium"] = self._calculate_si_based_flat(
-            "tyre_rim", input_data
-        )
+        if calculate_od:
+            calc["tyre_rim_premium"] = self._calculate_si_based_flat(
+                "tyre_rim", input_data
+            )
+        else:
+            calc["tyre_rim_premium"] = 0
         
         # AQ - Personal Effects (SI - 10k) Premium
-        calc["personal_effects_premium"] = self._calculate_flat_addon(
-            "personal_effects", input_data
-        )
+        if calculate_od:
+            calc["personal_effects_premium"] = self._calculate_flat_addon(
+                "personal_effects", input_data
+            )
+        else:
+            calc["personal_effects_premium"] = 0
         
         # AR - Courtesy Car Cover Premium
-        calc["courtesy_car_premium"] = self._calculate_flat_age_based(
-            "courtesy_car", input_data, calc["age_years"]
-        )
+        if calculate_od:
+            calc["courtesy_car_premium"] = self._calculate_flat_age_based(
+                "courtesy_car", input_data, calc["age_years"]
+            )
+        else:
+            calc["courtesy_car_premium"] = 0
         
         # AS - Road Tax Premium
-        calc["road_tax_premium"] = self._calculate_road_tax(input_data)
+        if calculate_od:
+            calc["road_tax_premium"] = self._calculate_road_tax(input_data)
+        else:
+            calc["road_tax_premium"] = 0
         
         # Step 5: AT-AX - Calculate TP premiums (Excel columns AT-AX)
+        # Only calculate TP premiums if TP is needed
         # AT - Basic TP
-        calc["basic_tp_premium"] = self.rate_lookup.get_tp_base_rate(
-            input_data["cc_category"]
-        )
+        if calculate_tp:
+            calc["basic_tp_premium"] = self.rate_lookup.get_tp_base_rate(
+                input_data["cc_category"]
+            )
+        else:
+            calc["basic_tp_premium"] = 0
         
         # AU - CPA owner Driver Premium
-        calc["cpa_owner_premium"] = self._calculate_flat_addon(
-            "cpa_owner_driver", input_data
-        )
+        if calculate_tp:
+            calc["cpa_owner_premium"] = self._calculate_flat_addon(
+                "cpa_owner_driver", input_data
+            )
+        else:
+            calc["cpa_owner_premium"] = 0
         
         # AV - LL to paid Driver
-        calc["ll_paid_driver_premium"] = self._calculate_flat_addon(
-            "ll_paid_driver", input_data
-        )
+        if calculate_tp:
+            calc["ll_paid_driver_premium"] = self._calculate_flat_addon(
+                "ll_paid_driver", input_data
+            )
+        else:
+            calc["ll_paid_driver_premium"] = 0
         
         # AW - CNG/LPG TP Premium
-        calc["cng_lpg_tp_premium"] = self._calculate_cng_lpg_tp(input_data)
+        if calculate_tp:
+            calc["cng_lpg_tp_premium"] = self._calculate_cng_lpg_tp(input_data)
+        else:
+            calc["cng_lpg_tp_premium"] = 0
         
         # AX - Geographical Area Extension TP Premium
-        calc["geo_extension_tp_premium"] = self._calculate_flat_addon(
-            "geo_extension_tp", input_data
-        )
+        if calculate_tp:
+            calc["geo_extension_tp_premium"] = self._calculate_flat_addon(
+                "geo_extension_tp", input_data
+            )
+        else:
+            calc["geo_extension_tp_premium"] = 0
         
         # Step 6: AY-AZ - Calculate discounts (Excel columns AY-AZ)
+        # Only apply discounts if OD is calculated
         # AY - OD Discount
-        calc["od_discount_amount"] = self._round(
-            calc["basic_od_premium"] * input_data.get("od_discount_percent", 0) / 100
-        )
+        if calculate_od:
+            calc["od_discount_amount"] = self._round(
+                calc["basic_od_premium"] * input_data.get("od_discount_percent", 0) / 100
+            )
+        else:
+            calc["od_discount_amount"] = 0
         
         # AZ - NCB Discount
-        calc["ncb_discount_amount"] = self._calculate_ncb_discount(
-            input_data, calc
-        )
+        if calculate_od:
+            calc["ncb_discount_amount"] = self._calculate_ncb_discount(
+                input_data, calc
+            )
+        else:
+            calc["ncb_discount_amount"] = 0
         
         # Step 7: BA - Calculate net premium (Excel column BA)
         calc["net_premium"] = self._calculate_net_premium(calc)
@@ -225,6 +312,29 @@ class PremiumCalculator:
                 "total_premium": calc["total_premium"]
             }
         }
+    
+    def _normalize_policy_type(self, policy_type: str) -> str:
+        """
+        Normalize policy type to standard values
+        Accepts both frontend labels and backend values
+        
+        Returns one of: "Package", "Third Party", "Standalone OD"
+        """
+        if not policy_type:
+            return "Package"  # Default
+        
+        policy_type_upper = policy_type.strip().upper()
+        
+        # Map various forms to standard values
+        if policy_type_upper in ["PACKAGE", "COMPREHENSIVE"]:
+            return "Package"
+        elif policy_type_upper in ["THIRD PARTY", "THIRDPARTY", "LIABILITY ONLY", "LIABILITY"]:
+            return "Third Party"
+        elif policy_type_upper in ["STANDALONE OD", "STANDALONEOD", "OWN DAMAGE ONLY", "OWNDAMAGEONLY", "OD ONLY"]:
+            return "Standalone OD"
+        else:
+            # Default to Package if unrecognized
+            return "Package"
     
     def _calculate_age(self, purchase_date) -> int:
         """Calculate vehicle age in years"""
