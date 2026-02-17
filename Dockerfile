@@ -16,5 +16,5 @@ COPY . .
 # Expose port (Railway will override with $PORT)
 EXPOSE 8000
 
-# Start command
-CMD uvicorn src.premium_calculator.api:app --host 0.0.0.0 --port ${PORT:-8000}
+# Start command - using shell form to properly expand $PORT
+CMD ["sh", "-c", "uvicorn src.premium_calculator.api:app --host 0.0.0.0 --port ${PORT:-8000}"]
