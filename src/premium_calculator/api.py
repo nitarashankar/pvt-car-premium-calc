@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, validator
 from typing import Dict, Any, List, Optional
 import io
 import json
+import os
 
 from .core.calculator import PremiumCalculator
 from .core.csv_processor import CSVProcessor, InputValidator
@@ -20,13 +21,23 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for frontend
+# Configure CORS - allow all origins for Railway deployment
+# Note: In production with credentials, you must specify exact origins
+# For now, we'll allow all origins without credentials
+allowed_origins = [
+    "http://localhost:3000",  # Local development
+    "http://localhost:8000",
+    "https://pvt-car-premium-calc-production.up.railway.app",  # Production frontend
+    "*"  # Allow any other origin
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=False,  # Must be False when using wildcard origins
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Initialize calculator
