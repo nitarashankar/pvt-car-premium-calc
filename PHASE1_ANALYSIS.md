@@ -403,17 +403,29 @@ Based on the calculator, these rate tables should exist (currently hardcoded):
 
 ## 11. SUMMARY STATISTICS
 
+### Complete Field Count
+| Category | Columns | Count |
+|----------|---------|-------|
+| **Total Input Fields** | A-Z | 26 |
+| **Primary Calculation Fields** | AA-BD | 30 |
+| **Display/Output Reference Fields** | BE-CH | 30 |
+| **TOTAL COLUMNS IN EXCEL** | A-CH | **86** |
+
+### Analysis Statistics
 | Category | Count |
 |----------|-------|
-| **Total Input Fields** | 26 |
-| **Total Calculation Fields** | 58 (including intermediates and outputs) |
-| **Total Formulas** | 23 unique formula types |
+| **Unique Formulas** | 30 (calculated fields) |
+| **Reference Formulas** | 30 (display copies) |
+| **Total Formula Fields** | 60 |
+| **Unique Formula Types** | 23 |
 | **Rate Tables** | 2 explicit (OD, TP) + multiple implicit |
 | **Discount Types** | 2 (NCB, OD Discount) |
 | **Loading Dimensions** | 3 (Age, Zone, Vehicle CC) |
 | **Add-On Covers** | 20 |
 | **Conditional Logic Points** | 50+ IF conditions |
-| **Output Fields** | 4 primary + 54 detailed |
+
+### Note on Display Fields (BE-CH)
+The Excel file contains 30 duplicate columns (BE-CH) that simply reference the primary calculation fields (AA-BD). These are used for formatted output/display purposes and don't perform new calculations. They use simple reference formulas like `=AA5`, `=AB5`, etc.
 
 ---
 
