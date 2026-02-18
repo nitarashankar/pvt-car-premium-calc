@@ -45,7 +45,11 @@ class PremiumCalculator:
         calculate_tp = policy_type in ["Package", "Third Party"]
         
         # Step 1: AA - Calculate vehicle age in years (Excel column AA)
-        calc["age_years"] = self._calculate_age(input_data["purchase_date"])
+        # Use renewal_date if provided, otherwise fall back to today
+        calc["age_years"] = self._calculate_age(
+            input_data["purchase_date"],
+            input_data.get("renewal_date")
+        )
         
         # Step 2: AB - Get OD base rate (Excel column AB)
         # Only calculate if OD is needed
@@ -336,16 +340,29 @@ class PremiumCalculator:
             # Default to Package if unrecognized
             return "Package"
     
-    def _calculate_age(self, purchase_date) -> int:
-        """Calculate vehicle age in years"""
+    def _calculate_age(self, purchase_date, renewal_date=None) -> int:
+        """
+        Calculate vehicle age in years.
+        
+        Age = difference between renewal_date (or today) and purchase_date (registration date).
+        """
         if isinstance(purchase_date, str):
             purchase_date = datetime.fromisoformat(purchase_date.split()[0]).date()
         elif isinstance(purchase_date, datetime):
             purchase_date = purchase_date.date()
         
-        today = date.today()
-        age = today.year - purchase_date.year
-        if (today.month, today.day) < (purchase_date.month, purchase_date.day):
+        if renewal_date:
+            if isinstance(renewal_date, str):
+                ref_date = datetime.fromisoformat(renewal_date.split()[0]).date()
+            elif isinstance(renewal_date, datetime):
+                ref_date = renewal_date.date()
+            else:
+                ref_date = renewal_date
+        else:
+            ref_date = date.today()
+        
+        age = ref_date.year - purchase_date.year
+        if (ref_date.month, ref_date.day) < (purchase_date.month, purchase_date.day):
             age -= 1
         
         return max(0, age)

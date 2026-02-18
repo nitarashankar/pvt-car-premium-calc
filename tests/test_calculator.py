@@ -273,8 +273,8 @@ def test_csv_processing_end_to_end():
     # Header + 2 data rows
     assert len(data_rows) == 2
 
-    # Should have 87 columns (row_number + 86 Excel fields)
-    assert len(header_cols) == 87, f"Expected 87 columns, got {len(header_cols)}"
+    # Should have 88 columns (row_number + 27 input + 30 calc + 30 display)
+    assert len(header_cols) == 88, f"Expected 88 columns, got {len(header_cols)}"
 
     # Verify column names include row_number, all inputs, calcs, and display fields
     assert header_cols[0] == "row_number"
@@ -350,6 +350,28 @@ def test_no_addons():
     assert c["total_premium"] == 8873.31
 
 
+def test_renewal_date_age_calculation():
+    """Test that renewal_date is used for age calculation when provided"""
+    calc = PremiumCalculator()
+    input_data = _get_sample_input()
+    # Registration date: 2020-06-15, Renewal date: 2025-06-15 → age = 5
+    input_data["purchase_date"] = "2020-06-15"
+    input_data["renewal_date"] = "2025-06-15"
+
+    result = calc.calculate(input_data)
+    assert result["calculations"]["age_years"] == 5
+
+    # Renewal date: 2023-06-15 → age = 3
+    input_data["renewal_date"] = "2023-06-15"
+    result = calc.calculate(input_data)
+    assert result["calculations"]["age_years"] == 3
+
+    # No renewal_date → falls back to today-based calculation
+    input_data["renewal_date"] = ""
+    result = calc.calculate(input_data)
+    assert result["calculations"]["age_years"] >= 0
+
+
 if __name__ == "__main__":
     test_basic_calculation()
     test_result_has_all_86_fields()
@@ -358,4 +380,5 @@ if __name__ == "__main__":
     test_csv_processing_end_to_end()
     test_csv_input_validation()
     test_no_addons()
+    test_renewal_date_age_calculation()
     print("\n✅ All tests completed successfully!")

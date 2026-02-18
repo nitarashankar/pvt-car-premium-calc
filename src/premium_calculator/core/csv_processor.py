@@ -86,6 +86,14 @@ class InputValidator:
             except (ValueError, TypeError):
                 errors.append("Purchase date must be in YYYY-MM-DD format")
         
+        # Validate renewal_date if provided
+        if "renewal_date" in data and data["renewal_date"]:
+            try:
+                date_str = str(data["renewal_date"]).split()[0]
+                datetime.fromisoformat(date_str)
+            except (ValueError, TypeError):
+                errors.append("Renewal date must be in YYYY-MM-DD format")
+        
         # Validate tyre_rim_si
         if "tyre_rim_si" in data and data["tyre_rim_si"]:
             try:
@@ -198,7 +206,8 @@ class CSVProcessor:
         # Define output columns matching Excel exactly (A-CH, 86 columns total)
         # Columns A-Z: Input Fields (26 columns)
         input_fields = [
-            "policy_type", "vehicle_type", "cc_category", "zone", "purchase_date", "idv",
+            "policy_type", "vehicle_type", "cc_category", "zone",
+            "purchase_date", "renewal_date", "idv",
             "ncb_percent", "od_discount_percent", "builtin_cng_lpg", "cng_lpg_si",
             "nil_dep", "return_to_invoice", "ncb_protect", "engine_protection",
             "consumables", "road_side_assistance", "geo_extension", "road_tax_cover",
@@ -286,6 +295,7 @@ class CSVProcessor:
             "cc_category": row.get("cc_category", "").strip(),
             "zone": row.get("zone", "").strip(),
             "purchase_date": row.get("purchase_date", "").strip(),
+            "renewal_date": row.get("renewal_date", "").strip(),
             "idv": to_float(row.get("idv")),
             "ncb_percent": to_float(row.get("ncb_percent", "0")) / 100 if "ncb_percent" in row else 0,
             "od_discount_percent": to_float(row.get("od_discount_percent", "0")),

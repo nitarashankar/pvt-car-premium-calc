@@ -70,7 +70,8 @@ class PremiumInput(BaseModel):
     vehicle_type: str = "New"
     cc_category: str = Field(..., description="Cubic capacity category")
     zone: str = Field(..., description="RTO zone (A or B)")
-    purchase_date: str = Field(..., description="Purchase date (YYYY-MM-DD)")
+    purchase_date: str = Field(..., description="Registration/Purchase date (YYYY-MM-DD)")
+    renewal_date: str = Field("", description="Renewal date (YYYY-MM-DD), optional")
     idv: float = Field(..., gt=0, description="Insured Declared Value")
     ncb_percent: float = Field(0, ge=0, le=0.5, description="NCB percentage (0-0.5)")
     od_discount_percent: float = Field(0, ge=0, le=100, description="OD discount %")
