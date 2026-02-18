@@ -13,6 +13,7 @@ from pathlib import Path
 
 from .core.calculator import PremiumCalculator
 from .core.csv_processor import CSVProcessor, InputValidator
+from .core.rate_lookup import RateLookupService
 from .config.loader import ConfigurationLoader
 
 
@@ -259,6 +260,16 @@ def get_gst_config():
     return config_loader.load_gst_config()
 
 
+def _reload_calculator():
+    """Reload calculator with fresh configuration after config changes"""
+    global csv_processor
+    config_loader.clear_cache()
+    new_config = config_loader.load_all_configs()
+    calculator.config = new_config
+    calculator.rate_lookup = RateLookupService(new_config)
+    csv_processor = CSVProcessor(calculator)
+
+
 @app.put("/config/od-rates")
 def update_od_rates(config: Dict[str, Any]):
     """
@@ -272,8 +283,8 @@ def update_od_rates(config: Dict[str, Any]):
         with open(config_path, 'w') as f:
             json.dump(config, f, indent=2)
         
-        # Reload config
-        config_loader.clear_cache()
+        # Reload config and reinitialize calculator
+        _reload_calculator()
         
         return {"success": True, "message": "OD rates updated"}
     
@@ -294,7 +305,7 @@ def update_addon_config(config: Dict[str, Any]):
         with open(config_path, 'w') as f:
             json.dump(config, f, indent=2)
         
-        config_loader.clear_cache()
+        _reload_calculator()
         
         return {"success": True, "message": "Add-on config updated"}
     

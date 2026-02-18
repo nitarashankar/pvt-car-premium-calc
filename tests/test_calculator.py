@@ -372,6 +372,37 @@ def test_renewal_date_age_calculation():
     assert result["calculations"]["age_years"] >= 0
 
 
+def test_config_reload_takes_effect():
+    """Test that config changes propagate to calculator immediately"""
+    import copy
+    from premium_calculator.core.rate_lookup import RateLookupService
+
+    calc = PremiumCalculator()
+    input_data = _get_sample_input()
+    input_data["purchase_date"] = "2022-01-01"
+    input_data["renewal_date"] = "2025-01-01"
+    input_data["return_to_invoice"] = 1
+
+    # Age 3 with default config: slab age_min=2, age_max=100, rate=0.25%
+    result = calc.calculate(input_data)
+    assert result["calculations"]["age_years"] == 3
+    assert result["calculations"]["return_to_invoice_premium"] > 0
+
+    # Simulate config editor change: age 2.51+ should get 0%
+    new_config = copy.deepcopy(calc.config)
+    new_config["addon_premiums"]["addons"]["return_to_invoice"]["slabs"] = [
+        {"age_min": 0, "age_max": 1, "rate_percent": 0.15},
+        {"age_min": 1, "age_max": 2, "rate_percent": 0.2},
+        {"age_min": 2, "age_max": 2.5, "rate_percent": 0.25},
+        {"age_min": 2.51, "age_max": 100, "rate_percent": 0},
+    ]
+    calc.config = new_config
+    calc.rate_lookup = RateLookupService(new_config)
+
+    result2 = calc.calculate(input_data)
+    assert result2["calculations"]["return_to_invoice_premium"] == 0
+
+
 if __name__ == "__main__":
     test_basic_calculation()
     test_result_has_all_86_fields()
@@ -381,4 +412,5 @@ if __name__ == "__main__":
     test_csv_input_validation()
     test_no_addons()
     test_renewal_date_age_calculation()
+    test_config_reload_takes_effect()
     print("\n✅ All tests completed successfully!")
