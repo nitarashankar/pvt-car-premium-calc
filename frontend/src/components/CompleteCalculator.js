@@ -203,7 +203,9 @@ const CompleteCalculator = () => {
   const handlePaUnnamedToggle = (e) => {
     const enabled = e.target.checked;
     setPaUnnamedEnabled(enabled);
-    if (!enabled) {
+    if (enabled) {
+      setFormData((prev) => ({ ...prev, pa_unnamed_persons: 1, pa_unnamed_si: 100000 }));
+    } else {
       setFormData((prev) => ({ ...prev, pa_unnamed_persons: 0, pa_unnamed_si: 0 }));
     }
   };
@@ -306,7 +308,7 @@ const CompleteCalculator = () => {
       ['Purchase Date', formData.purchase_date],
       ['Renewal Date', formData.renewal_date || 'N/A'],
       ['IDV', `Rs. ${Number(formData.idv).toLocaleString('en-IN')}`],
-      ['Vehicle Age', `${c.age_years} years`],
+      ['Vehicle Age', `${Number(c.age_years).toFixed(2)} years`],
       ['NCB', `${ncbValue}%`],
     ];
     vehicleDetails.forEach(([label, value]) => {
@@ -750,7 +752,7 @@ const CompleteCalculator = () => {
                   <Grid item xs={12} sm={6} md={4}>
                     <TextField fullWidth size="small" type="number" label="Number of Persons" name="pa_unnamed_persons"
                       value={formData.pa_unnamed_persons} onChange={handleChange}
-                      inputProps={{ min: 0 }} helperText="How many unnamed persons?" />
+                      inputProps={{ min: 1 }} helperText="Enter number of persons (min 1)" />
                   </Grid>
                   <Grid item xs={12} sm={6} md={4}>
                     <FormControl fullWidth size="small">
@@ -902,7 +904,7 @@ const CompleteCalculator = () => {
                     <TableBody>
                       {/* Vehicle Age & OD Rate */}
                       <TableRow><TableCell colSpan={3} sx={{ bgcolor: '#f5f5f7', fontWeight: 600, fontSize: '0.8rem', py: 1 }}>Vehicle Age & OD Rate</TableCell></TableRow>
-                      <TableRow><TableCell>AA</TableCell><TableCell>Age of vehicle</TableCell><TableCell align="right">{result.calculations.age_years} years</TableCell></TableRow>
+                      <TableRow><TableCell>AA</TableCell><TableCell>Age of vehicle</TableCell><TableCell align="right">{Number(result.calculations.age_years).toFixed(2)} years</TableCell></TableRow>
                       <TableRow><TableCell>AB</TableCell><TableCell>OD Basic Rate</TableCell><TableCell align="right">{result.calculations.od_base_rate_percent}%</TableCell></TableRow>
                       <TableRow><TableCell>AC</TableCell><TableCell>Basic OD Premium</TableCell><TableCell align="right">{formatCurrency(result.calculations.basic_od_premium)}</TableCell></TableRow>
 
