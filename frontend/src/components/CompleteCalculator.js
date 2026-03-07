@@ -357,8 +357,11 @@ const CompleteCalculator = () => {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth size="small" label="Mobile No." name="mobile_no"
-                  value={formData.mobile_no} onChange={handleChange}
-                  placeholder="e.g. 9876543210" inputProps={{ maxLength: 10 }} />
+                  value={formData.mobile_no} onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    setFormData((prev) => ({ ...prev, mobile_no: val }));
+                  }}
+                  placeholder="e.g. 9876543210" inputProps={{ maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' }} />
               </Grid>
             </Grid>
           </CardContent>
