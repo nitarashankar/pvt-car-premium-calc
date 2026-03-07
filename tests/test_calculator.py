@@ -61,8 +61,9 @@ def test_basic_calculation():
 
     c = result["calculations"]
 
-    # AA - Vehicle age
-    assert c["age_years"] >= 1
+    # AA - Vehicle age (now float with 2 decimal places)
+    assert isinstance(c["age_years"], float)
+    assert c["age_years"] >= 0.9  # ~1 year between 2025-01-01 and 2026-01-01
 
     # AB - OD base rate for Zone A, 1000cc-1500cc, age 1
     assert c["od_base_rate_percent"] == 3.283
@@ -157,7 +158,7 @@ def test_result_has_all_86_fields():
     calc = PremiumCalculator()
     result = calc.calculate(_get_sample_input())
 
-    # 30 calculation fields (AA-BD)
+    # Calculation fields (31 = 30 original + pa_unnamed_premium)
     expected_calc_fields = [
         "age_years", "od_base_rate_percent", "basic_od_premium",
         "nil_dep_premium", "engine_protection_premium", "road_side_assistance_premium",
@@ -167,15 +168,16 @@ def test_result_has_all_86_fields():
         "tyre_rim_premium", "personal_effects_premium", "courtesy_car_premium",
         "road_tax_premium", "basic_tp_premium", "cpa_owner_premium",
         "ll_paid_driver_premium", "cng_lpg_tp_premium", "geo_extension_tp_premium",
+        "pa_unnamed_premium",
         "od_discount_amount", "ncb_discount_amount", "net_premium",
         "cgst", "sgst", "total_premium"
     ]
-    assert len(expected_calc_fields) == 30
+    assert len(expected_calc_fields) == 31
 
     for field in expected_calc_fields:
         assert field in result["calculations"], f"Missing calculation field: {field}"
 
-    # 30 display fields (BE-CH)
+    # Display fields (copies of calculation fields)
     for field in expected_calc_fields:
         display_field = field + "_display"
         assert display_field in result["display"], f"Missing display field: {display_field}"
@@ -274,8 +276,8 @@ def test_csv_processing_end_to_end():
     # Header + 2 data rows
     assert len(data_rows) == 2
 
-    # Should have 88 columns (row_number + 27 input + 30 calc + 30 display)
-    assert len(header_cols) == 88, f"Expected 88 columns, got {len(header_cols)}"
+    # Should have 93 columns (row_number + 30 input + 31 calc + 31 display)
+    assert len(header_cols) == 93, f"Expected 93 columns, got {len(header_cols)}"
 
     # Verify column names include row_number, all inputs, calcs, and display fields
     assert header_cols[0] == "row_number"

@@ -212,10 +212,11 @@ class CSVProcessor:
             "nil_dep", "return_to_invoice", "ncb_protect", "engine_protection",
             "consumables", "road_side_assistance", "geo_extension", "road_tax_cover",
             "courtesy_car", "additional_towing", "medical_expenses", "loss_of_key",
-            "tyre_rim_si", "personal_effects", "cpa_owner_driver", "ll_paid_driver"
+            "tyre_rim_si", "personal_effects", "cpa_owner_driver", "ll_paid_driver",
+            "pa_unnamed_persons", "pa_unnamed_si", "road_tax_si"
         ]
         
-        # Columns AA-BD: Primary Calculation Fields (30 columns)
+        # Columns AA-BD: Primary Calculation Fields (30 columns + pa_unnamed_premium)
         calc_fields = [
             "age_years", "od_base_rate_percent", "basic_od_premium",
             "nil_dep_premium", "engine_protection_premium", "road_side_assistance_premium",
@@ -225,6 +226,7 @@ class CSVProcessor:
             "tyre_rim_premium", "personal_effects_premium", "courtesy_car_premium",
             "road_tax_premium", "basic_tp_premium", "cpa_owner_premium",
             "ll_paid_driver_premium", "cng_lpg_tp_premium", "geo_extension_tp_premium",
+            "pa_unnamed_premium",
             "od_discount_amount", "ncb_discount_amount", "net_premium",
             "cgst", "sgst", "total_premium"
         ]
@@ -316,5 +318,8 @@ class CSVProcessor:
             "tyre_rim_si": to_float(row.get("tyre_rim_si", "0")),
             "personal_effects": to_bool(row.get("personal_effects", "0")),
             "cpa_owner_driver": to_bool(row.get("cpa_owner_driver", "0")),
-            "ll_paid_driver": to_bool(row.get("ll_paid_driver", "0"))
+            "ll_paid_driver": to_bool(row.get("ll_paid_driver", "0")),
+            "pa_unnamed_persons": int(to_float(row.get("pa_unnamed_persons", "0"))),
+            "pa_unnamed_si": to_float(row.get("pa_unnamed_si", "0")),
+            "road_tax_si": to_float(row.get("road_tax_si", "0"))
         }

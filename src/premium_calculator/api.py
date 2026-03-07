@@ -94,6 +94,9 @@ class PremiumInput(BaseModel):
     personal_effects: int = Field(0, ge=0, le=1)
     cpa_owner_driver: int = Field(0, ge=0, le=1)
     ll_paid_driver: int = Field(0, ge=0, le=1)
+    pa_unnamed_persons: int = Field(0, ge=0, description="PA Cover Unnamed Persons - number of persons")
+    pa_unnamed_si: float = Field(0, ge=0, description="PA Cover Unnamed Persons - capital sum insured per person")
+    road_tax_si: float = Field(0, ge=0, description="Road Tax Cover sum insured")
     
     @field_validator('cc_category')
     @classmethod

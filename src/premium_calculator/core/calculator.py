@@ -237,6 +237,12 @@ class PremiumCalculator:
         else:
             calc["geo_extension_tp_premium"] = 0
         
+        # PA Cover - Unnamed Persons TP Premium
+        if calculate_tp:
+            calc["pa_unnamed_premium"] = self._calculate_pa_unnamed(input_data)
+        else:
+            calc["pa_unnamed_premium"] = 0
+        
         # Step 6: AY-AZ - Calculate discounts (Excel columns AY-AZ)
         # Only apply discounts if OD is calculated
         # AY - OD Discount
@@ -298,6 +304,7 @@ class PremiumCalculator:
             "ll_paid_driver_premium_display": calc["ll_paid_driver_premium"],
             "cng_lpg_tp_premium_display": calc["cng_lpg_tp_premium"],
             "geo_extension_tp_premium_display": calc["geo_extension_tp_premium"],
+            "pa_unnamed_premium_display": calc["pa_unnamed_premium"],
             "od_discount_amount_display": calc["od_discount_amount"],
             "ncb_discount_amount_display": calc["ncb_discount_amount"],
             "net_premium_display": calc["net_premium"],
@@ -341,11 +348,12 @@ class PremiumCalculator:
             # Default to Package if unrecognized
             return "Package"
     
-    def _calculate_age(self, purchase_date, renewal_date=None) -> int:
+    def _calculate_age(self, purchase_date, renewal_date=None) -> float:
         """
-        Calculate vehicle age in years.
+        Calculate vehicle age in years with 2 decimal places.
         
         Age = difference between renewal_date (or today) and purchase_date (registration date).
+        Returns float rounded to 2 decimal places (e.g. 3.42 years).
         """
         if isinstance(purchase_date, str):
             purchase_date = datetime.fromisoformat(purchase_date.split()[0]).date()
@@ -362,11 +370,10 @@ class PremiumCalculator:
         else:
             ref_date = date.today()
         
-        age = ref_date.year - purchase_date.year
-        if (ref_date.month, ref_date.day) < (purchase_date.month, purchase_date.day):
-            age -= 1
+        delta = ref_date - purchase_date
+        age = delta.days / 365.25
         
-        return max(0, age)
+        return round(max(0, age), 2)
     
     def _calculate_nil_dep(self, input_data, basic_od, age) -> float:
         """Calculate Nil Depreciation premium"""
@@ -471,13 +478,34 @@ class PremiumCalculator:
         return 0
     
     def _calculate_road_tax(self, input_data) -> float:
-        """Calculate road tax cover premium"""
+        """Calculate road tax cover premium based on user-entered sum insured"""
         if not input_data.get("road_tax_cover", 0):
             return 0
         
-        # Road tax is 0.25% of (IDV * 20%)
-        base_amount = input_data["idv"] * 0.20
-        premium = base_amount * 0.25 / 100
+        road_tax_si = input_data.get("road_tax_si", 0)
+        if road_tax_si == 0:
+            # Fallback to IDV-based calculation if no SI provided
+            road_tax_si = input_data["idv"] * 0.20
+        
+        # Premium = 0.25% of sum insured
+        premium = road_tax_si * 0.25 / 100
+        return self._round(premium)
+    
+    def _calculate_pa_unnamed(self, input_data) -> float:
+        """
+        Calculate PA Cover - Unnamed Persons premium.
+        Formula: (Capital Sum Insured / 100000) × 50 × Number of Persons
+        """
+        if not input_data.get("pa_unnamed_persons", 0):
+            return 0
+        
+        persons = int(input_data.get("pa_unnamed_persons", 0))
+        si = float(input_data.get("pa_unnamed_si", 0))
+        
+        if persons <= 0 or si <= 0:
+            return 0
+        
+        premium = (si / 100000) * 50 * persons
         return self._round(premium)
     
     def _calculate_ncb_discount(self, input_data, calc) -> float:
@@ -530,7 +558,8 @@ class PremiumCalculator:
             calc["cpa_owner_premium"] +
             calc["ll_paid_driver_premium"] +
             calc["cng_lpg_tp_premium"] +
-            calc["geo_extension_tp_premium"]
+            calc["geo_extension_tp_premium"] +
+            calc["pa_unnamed_premium"]
         )
         
         # Net = (OD + TP) - Discounts
