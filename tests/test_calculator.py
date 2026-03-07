@@ -135,10 +135,10 @@ def test_basic_calculation():
     # AY - OD discount = basic_od * 60% = 4103.75 * 0.6 = 2462.25
     assert c["od_discount_amount"] == 2462.25
 
-    # AZ - NCB discount: ((basic_od - od_disc) + nil_dep + rti + geo_od + cng_od) * 0.2
-    # = ((4103.75 - 2462.25) + 820.75 + 250.0 + 400.0 + 82.08) * 0.2
-    # = 3194.33 * 0.2 = 638.87
-    assert c["ncb_discount_amount"] == 638.87
+    # AZ - NCB discount: ((basic_od - od_disc) + nil_dep + rti + geo_od + cng_od + towing + personal_effects) * 0.2
+    # = ((4103.75 - 2462.25) + 820.75 + 250.0 + 400.0 + 82.08 + 75.0 + 500.0) * 0.2
+    # = 3769.33 * 0.2 = 753.87
+    assert c["ncb_discount_amount"] == 753.87
 
     # BA - Net premium
     assert c["net_premium"] > 0

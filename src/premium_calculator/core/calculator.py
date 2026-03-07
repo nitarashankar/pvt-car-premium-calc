@@ -486,12 +486,15 @@ class PremiumCalculator:
             return 0
         
         # NCB applies to: (Basic OD - OD Discount) + Nil Dep + RTI + Geo Ext OD + Built-in CNG OD
+        #                 + Additional Towing + Personal Effects
         ncb_base = (
             calc["basic_od_premium"] - calc["od_discount_amount"] +
             calc["nil_dep_premium"] +
             calc["return_to_invoice_premium"] +
             calc["geo_extension_od_premium"] +
-            calc["builtin_cng_od_premium"]
+            calc["builtin_cng_od_premium"] +
+            calc["towing_charges_premium"] +
+            calc["personal_effects_premium"]
         )
         
         return self._round(ncb_base * ncb_percent)  # ncb_percent is in decimal (0.2 = 20%)
