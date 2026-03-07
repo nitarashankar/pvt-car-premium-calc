@@ -16,19 +16,32 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import calculatorAPI from '../services/api';
 
+const getTomorrowDate = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+};
+
+const getVehicleAgeYears = (purchaseDate) => {
+  if (!purchaseDate) return 0;
+  const now = new Date();
+  const purchase = new Date(purchaseDate);
+  return (now - purchase) / (365.25 * 24 * 60 * 60 * 1000);
+};
+
 const defaultFormData = {
   policy_type: 'Package',
-  vehicle_type: 'New',
+  vehicle_type: 'Rollover',
   cc_category: '1000cc_1500cc',
-  zone: 'A',
+  zone: 'B',
   purchase_date: '2024-01-01',
-  renewal_date: '2025-01-01',
+  renewal_date: getTomorrowDate(),
   idv: 125000,
   ncb_percent: 0,
   od_discount_percent: 0,
   builtin_cng_lpg: 0,
   cng_lpg_si: 0,
-  nil_dep: 0,
+  nil_dep: 1,
   return_to_invoice: 0,
   ncb_protect: 0,
   engine_protection: 0,
@@ -42,8 +55,8 @@ const defaultFormData = {
   loss_of_key: 0,
   tyre_rim_si: 0,
   personal_effects: 0,
-  cpa_owner_driver: 0,
-  ll_paid_driver: 0,
+  cpa_owner_driver: 1,
+  ll_paid_driver: 1,
 };
 
 const formatCurrency = (value) => {
@@ -73,10 +86,18 @@ const CompleteCalculator = () => {
 
   const handleChange = (e) => {
     const { name, value, checked, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (checked ? 1 : 0) : value,
-    }));
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: type === 'checkbox' ? (checked ? 1 : 0) : value,
+      };
+      // Auto-enable Nil Dep if vehicle age < 5 years based on purchase date
+      if (name === 'purchase_date' && value) {
+        const ageYears = getVehicleAgeYears(value);
+        updated.nil_dep = ageYears < 5 ? 1 : 0;
+      }
+      return updated;
+    });
   };
 
   const handleSwitchChange = (name) => (e) => {
@@ -261,14 +282,14 @@ const CompleteCalculator = () => {
                 { name: 'nil_dep', label: 'Zero Depreciation' },
                 { name: 'return_to_invoice', label: 'Return to Invoice' },
                 { name: 'ncb_protect', label: 'NCB Protect' },
-                { name: 'engine_protection', label: 'Engine & Gearbox Protection' },
+                { name: 'engine_protection', label: 'Engine & Gearbox Protection - Platinum' },
                 { name: 'consumables', label: 'Consumables' },
                 { name: 'road_side_assistance', label: 'Road Side Assistance' },
                 { name: 'geo_extension', label: 'Geographical Extension' },
                 { name: 'road_tax_cover', label: 'Road Tax Cover' },
-                { name: 'courtesy_car', label: 'Courtesy Car' },
+                { name: 'courtesy_car', label: 'Courtesy Car (for 7 days)' },
                 { name: 'additional_towing', label: 'Additional Towing' },
-                { name: 'medical_expenses', label: 'Medical Expenses' },
+                { name: 'medical_expenses', label: 'Medical Expenses Option 2' },
                 { name: 'loss_of_key', label: 'Loss of Key (₹25k)' },
                 { name: 'personal_effects', label: 'Personal Effects (₹10k)' },
               ].map((addon) => (
