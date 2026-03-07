@@ -14,6 +14,9 @@ import SecurityOutlined from '@mui/icons-material/SecurityOutlined';
 import GavelOutlined from '@mui/icons-material/GavelOutlined';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import ExpandLess from '@mui/icons-material/ExpandLess';
+import PictureAsPdfOutlined from '@mui/icons-material/PictureAsPdfOutlined';
+import PersonOutlined from '@mui/icons-material/PersonOutlined';
+import { jsPDF } from 'jspdf';
 import calculatorAPI from '../services/api';
 
 const getTomorrowDate = () => {
@@ -30,6 +33,8 @@ const getVehicleAgeYears = (purchaseDate) => {
 };
 
 const defaultFormData = {
+  registration_no: '',
+  mobile_no: '',
   policy_type: 'Package',
   vehicle_type: 'Rollover',
   cc_category: '1000cc_1500cc',
@@ -108,6 +113,19 @@ const CompleteCalculator = () => {
       if (name === 'builtin_cng_lpg' && newVal === 1) {
         updated.cng_lpg_si = 0;
       }
+      // Road tax cover cannot be opted if Return to Invoice is opted
+      if (name === 'road_tax_cover' && newVal === 1 && prev.return_to_invoice) {
+        setError('Road Tax cover can not be opted if Return to Invoice has been selected');
+        return prev;
+      }
+      // If Return to Invoice is turned ON, turn off Road Tax Cover
+      if (name === 'return_to_invoice' && newVal === 1 && prev.road_tax_cover) {
+        updated.road_tax_cover = 0;
+      }
+      // Clear road tax error when conditions change
+      if (name === 'return_to_invoice' && newVal === 0) {
+        setError(null);
+      }
       return updated;
     });
   };
@@ -147,6 +165,174 @@ const CompleteCalculator = () => {
     }
   };
 
+  const generatePDF = () => {
+    if (!result) return;
+    const c = result.calculations;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 20;
+
+    // Header
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Motor Insurance Premium Quotation', pageWidth / 2, y, { align: 'center' });
+    y += 10;
+    doc.setDrawColor(0, 102, 204);
+    doc.setLineWidth(0.5);
+    doc.line(20, y, pageWidth - 20, y);
+    y += 10;
+
+    // Customer details
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    if (formData.registration_no) {
+      doc.text(`Vehicle Registration No: ${formData.registration_no}`, 20, y);
+      y += 6;
+    }
+    if (formData.mobile_no) {
+      doc.text(`Mobile No: ${formData.mobile_no}`, 20, y);
+      y += 6;
+    }
+    y += 2;
+
+    // Vehicle details
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Vehicle Details', 20, y);
+    y += 7;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    const vehicleDetails = [
+      ['Policy Type', formData.policy_type],
+      ['Vehicle Type', formData.vehicle_type],
+      ['CC Category', formData.cc_category],
+      ['Zone', `Zone ${formData.zone}`],
+      ['Purchase Date', formData.purchase_date],
+      ['Renewal Date', formData.renewal_date || 'N/A'],
+      ['IDV', `Rs. ${Number(formData.idv).toLocaleString('en-IN')}`],
+      ['Vehicle Age', `${c.age_years} years`],
+    ];
+    vehicleDetails.forEach(([label, value]) => {
+      doc.text(`${label}:`, 25, y);
+      doc.text(String(value), 80, y);
+      y += 5;
+    });
+    y += 3;
+
+    // Premium breakdown table
+    const fmt = (v) => `Rs. ${Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Premium Breakdown', 20, y);
+    y += 7;
+
+    // Table header
+    doc.setFillColor(0, 102, 204);
+    doc.rect(20, y - 4, pageWidth - 40, 7, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Component', 25, y);
+    doc.text('Amount', pageWidth - 25, y, { align: 'right' });
+    doc.setTextColor(0, 0, 0);
+    y += 7;
+
+    // Table rows helper
+    const addRow = (label, value, isBold, isNegative) => {
+      if (y > 260) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+      doc.setFontSize(9);
+      doc.text(label, 25, y);
+      const color = isNegative ? [220, 50, 50] : [0, 0, 0];
+      doc.setTextColor(...color);
+      doc.text((isNegative ? '-' : '') + fmt(value), pageWidth - 25, y, { align: 'right' });
+      doc.setTextColor(0, 0, 0);
+      y += 5;
+    };
+
+    const addSectionHeader = (title) => {
+      if (y > 260) { doc.addPage(); y = 20; }
+      doc.setFillColor(245, 245, 247);
+      doc.rect(20, y - 4, pageWidth - 40, 6, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text(title, 25, y);
+      y += 6;
+    };
+
+    // OD Premiums
+    addSectionHeader('OWN DAMAGE PREMIUMS');
+    addRow('Basic OD Premium', c.basic_od_premium);
+    if (c.nil_dep_premium > 0) addRow('Zero Depreciation', c.nil_dep_premium);
+    if (c.engine_protection_premium > 0) addRow('Engine & Gearbox Protection', c.engine_protection_premium);
+    if (c.road_side_assistance_premium > 0) addRow('Road Side Assistance', c.road_side_assistance_premium);
+    if (c.return_to_invoice_premium > 0) addRow('Return to Invoice', c.return_to_invoice_premium);
+    if (c.ncb_protect_premium > 0) addRow('NCB Protect', c.ncb_protect_premium);
+    if (c.consumables_premium > 0) addRow('Consumables', c.consumables_premium);
+    if (c.geo_extension_od_premium > 0) addRow('Geographical Extension OD', c.geo_extension_od_premium);
+    if (c.builtin_cng_od_premium > 0) addRow('Built-in CNG/LPG OD', c.builtin_cng_od_premium);
+    if (c.cng_lpg_od_premium > 0) addRow('CNG/LPG OD', c.cng_lpg_od_premium);
+    if (c.loss_of_key_premium > 0) addRow('Loss of Key', c.loss_of_key_premium);
+    if (c.towing_charges_premium > 0) addRow('Additional Towing', c.towing_charges_premium);
+    if (c.medical_expenses_premium > 0) addRow('Medical Expenses', c.medical_expenses_premium);
+    if (c.tyre_rim_premium > 0) addRow('Tyre & RIM Protector', c.tyre_rim_premium);
+    if (c.personal_effects_premium > 0) addRow('Personal Effects', c.personal_effects_premium);
+    if (c.courtesy_car_premium > 0) addRow('Courtesy Car', c.courtesy_car_premium);
+    if (c.road_tax_premium > 0) addRow('Road Tax Cover', c.road_tax_premium);
+
+    // TP Premiums
+    addSectionHeader('THIRD PARTY PREMIUMS');
+    addRow('Basic TP Premium', c.basic_tp_premium);
+    if (c.cpa_owner_premium > 0) addRow('CPA Owner Driver', c.cpa_owner_premium);
+    if (c.ll_paid_driver_premium > 0) addRow('LL to Paid Driver', c.ll_paid_driver_premium);
+    if (c.cng_lpg_tp_premium > 0) addRow('CNG/LPG TP', c.cng_lpg_tp_premium);
+    if (c.geo_extension_tp_premium > 0) addRow('Geographical Extension TP', c.geo_extension_tp_premium);
+
+    // Discounts
+    addSectionHeader('DISCOUNTS');
+    if (c.od_discount_amount > 0) addRow('OD Discount', c.od_discount_amount, false, true);
+    if (c.ncb_discount_amount > 0) addRow('NCB Discount', c.ncb_discount_amount, false, true);
+
+    // Totals
+    y += 2;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, y, pageWidth - 20, y);
+    y += 5;
+    addRow('Net Premium', c.net_premium, true);
+    addRow('CGST @9%', c.cgst);
+    addRow('SGST @9%', c.sgst);
+    y += 2;
+    doc.setDrawColor(0, 102, 204);
+    doc.setLineWidth(0.5);
+    doc.line(20, y, pageWidth - 20, y);
+    y += 6;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL PREMIUM', 25, y);
+    doc.setTextColor(0, 102, 204);
+    doc.text(fmt(c.total_premium), pageWidth - 25, y, { align: 'right' });
+    doc.setTextColor(0, 0, 0);
+
+    // Footer
+    const pageHeight = doc.internal.pageSize.getHeight();
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, pageHeight - 30, pageWidth - 20, pageHeight - 30);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text('This is not a policy, It is a quotation which is valid upto 30 days only.', pageWidth / 2, pageHeight - 23, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bolditalic');
+    doc.setTextColor(0, 102, 204);
+    doc.text('Powered by BimaUncle.com', pageWidth - 25, pageHeight - 14, { align: 'right' });
+
+    doc.save('Premium_Quotation.pdf');
+  };
+
   return (
     <Box>
       <Box sx={{ mb: 4 }}>
@@ -159,6 +345,25 @@ const CompleteCalculator = () => {
       </Box>
 
       <form onSubmit={handleSubmit}>
+        {/* Card 0: Customer Details */}
+        <Card sx={cardSx}>
+          <CardContent sx={{ p: 3 }}>
+            {sectionHeader(<PersonOutlined sx={{ color: '#0066CC' }} />, 'Customer Details')}
+            <Grid container spacing={2.5}>
+              <Grid item xs={12} sm={6}>
+                <TextField fullWidth size="small" label="Vehicle Registration No." name="registration_no"
+                  value={formData.registration_no} onChange={handleChange}
+                  placeholder="e.g. MH01AB1234" />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField fullWidth size="small" label="Mobile No." name="mobile_no"
+                  value={formData.mobile_no} onChange={handleChange}
+                  placeholder="e.g. 9876543210" inputProps={{ maxLength: 10 }} />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
         {/* Card 1: Vehicle Details */}
         <Card sx={cardSx}>
           <CardContent sx={{ p: 3 }}>
@@ -331,14 +536,14 @@ const CompleteCalculator = () => {
         </Card>
 
         {/* Action Buttons */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
+        <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
           <Button
             type="submit"
             variant="contained"
             size="large"
             disabled={loading}
             startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <CalculateOutlined />}
-            sx={{ flex: 1, py: 1.5, fontSize: '1rem' }}
+            sx={{ flex: 1, py: 1.5, fontSize: '1rem', minWidth: 180 }}
           >
             {loading ? 'Calculating…' : 'Calculate Premium'}
           </Button>
@@ -355,6 +560,21 @@ const CompleteCalculator = () => {
           >
             Reset
           </Button>
+          {result && (
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={generatePDF}
+              startIcon={<PictureAsPdfOutlined />}
+              sx={{
+                px: 4, py: 1.5,
+                borderColor: '#FF3B30', color: '#FF3B30',
+                '&:hover': { borderColor: '#CC2D26', bgcolor: 'rgba(255,59,48,0.04)' },
+              }}
+            >
+              Export PDF
+            </Button>
+          )}
         </Box>
       </form>
 
