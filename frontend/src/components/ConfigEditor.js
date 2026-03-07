@@ -102,10 +102,14 @@ const ConfigEditor = () => {
       
       if (currentType === 'odRates') {
         await calculatorAPI.updateODRates(config);
+      } else if (currentType === 'tpRates') {
+        await calculatorAPI.updateTPRates(config);
       } else if (currentType === 'addons') {
         await calculatorAPI.updateAddonConfig(config);
-      } else {
-        throw new Error('Update not implemented for this config type');
+      } else if (currentType === 'discounts') {
+        await calculatorAPI.updateDiscountConfig(config);
+      } else if (currentType === 'gst') {
+        await calculatorAPI.updateGSTConfig(config);
       }
 
       setSuccess('Configuration saved successfully!');

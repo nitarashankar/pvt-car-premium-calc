@@ -260,6 +260,9 @@ def get_gst_config():
     return config_loader.load_gst_config()
 
 
+_CONFIG_DIR = Path(__file__).parent.parent.parent / "config"
+
+
 def _reload_calculator():
     """Reload calculator with fresh configuration after config changes"""
     global csv_processor
@@ -270,47 +273,46 @@ def _reload_calculator():
     csv_processor = CSVProcessor(calculator)
 
 
-@app.put("/config/od-rates")
-def update_od_rates(config: Dict[str, Any]):
-    """
-    Update OD rates configuration
-    
-    Args:
-        config: New OD rates configuration
-    """
+def _save_config(filename: str, config: Dict[str, Any], label: str):
+    """Save configuration to JSON file and reload calculator"""
     try:
-        config_path = Path(__file__).parent.parent.parent / "config" / "od_base_rates.json"
+        config_path = _CONFIG_DIR / filename
         with open(config_path, 'w') as f:
             json.dump(config, f, indent=2)
-        
-        # Reload config and reinitialize calculator
         _reload_calculator()
-        
-        return {"success": True, "message": "OD rates updated"}
-    
+        return {"success": True, "message": f"{label} updated"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/config/od-rates")
+def update_od_rates(config: Dict[str, Any]):
+    """Update OD rates configuration"""
+    return _save_config("od_base_rates.json", config, "OD rates")
 
 
 @app.put("/config/addons")
 def update_addon_config(config: Dict[str, Any]):
-    """
-    Update add-on configuration
-    
-    Args:
-        config: New add-on configuration
-    """
-    try:
-        config_path = Path(__file__).parent.parent.parent / "config" / "addon_premiums.json"
-        with open(config_path, 'w') as f:
-            json.dump(config, f, indent=2)
-        
-        _reload_calculator()
-        
-        return {"success": True, "message": "Add-on config updated"}
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    """Update add-on configuration"""
+    return _save_config("addon_premiums.json", config, "Add-on config")
+
+
+@app.put("/config/tp-rates")
+def update_tp_rates(config: Dict[str, Any]):
+    """Update TP rates configuration"""
+    return _save_config("tp_base_rates.json", config, "TP rates")
+
+
+@app.put("/config/discounts")
+def update_discount_config(config: Dict[str, Any]):
+    """Update discount rules configuration"""
+    return _save_config("discount_rules.json", config, "Discount rules")
+
+
+@app.put("/config/gst")
+def update_gst_config(config: Dict[str, Any]):
+    """Update GST configuration"""
+    return _save_config("gst_config.json", config, "GST config")
 
 
 @app.get("/validate")

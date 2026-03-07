@@ -80,7 +80,15 @@ const CompleteCalculator = () => {
   };
 
   const handleSwitchChange = (name) => (e) => {
-    setFormData((prev) => ({ ...prev, [name]: e.target.checked ? 1 : 0 }));
+    const newVal = e.target.checked ? 1 : 0;
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: newVal };
+      // When built-in CNG/LPG is turned ON, set external CNG/LPG SI to 0
+      if (name === 'builtin_cng_lpg' && newVal === 1) {
+        updated.cng_lpg_si = 0;
+      }
+      return updated;
+    });
   };
 
   const handleReset = () => {
@@ -196,10 +204,22 @@ const CompleteCalculator = () => {
             {sectionHeader(<PercentOutlined sx={{ color: '#0066CC' }} />, 'Discounts')}
             <Grid container spacing={2.5}>
               <Grid item xs={12} sm={6}>
-                <TextField fullWidth size="small" type="number" label="NCB (%)" name="ncb_percent"
-                  value={formData.ncb_percent} onChange={handleChange}
-                  inputProps={{ min: 0, max: 50, step: 1 }}
-                  helperText="No Claim Bonus percentage (0–50%)" />
+                <FormControl fullWidth size="small">
+                  <InputLabel>NCB (%)</InputLabel>
+                  <Select
+                    name="ncb_percent"
+                    value={formData.ncb_percent}
+                    label="NCB (%)"
+                    onChange={handleChange}
+                  >
+                    <MenuItem value={0}>0% (Default)</MenuItem>
+                    <MenuItem value={20}>20%</MenuItem>
+                    <MenuItem value={25}>25%</MenuItem>
+                    <MenuItem value={35}>35%</MenuItem>
+                    <MenuItem value={45}>45%</MenuItem>
+                    <MenuItem value={50}>50%</MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth size="small" type="number" label="OD Discount (%)" name="od_discount_percent"
@@ -225,7 +245,8 @@ const CompleteCalculator = () => {
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth size="small" type="number" label="CNG/LPG Sum Insured (₹)" name="cng_lpg_si"
                   value={formData.cng_lpg_si} onChange={handleChange}
-                  helperText="For external CNG/LPG kit" />
+                  disabled={!!formData.builtin_cng_lpg}
+                  helperText={formData.builtin_cng_lpg ? "Not applicable for built-in CNG/LPG" : "For external CNG/LPG kit"} />
               </Grid>
             </Grid>
           </CardContent>
