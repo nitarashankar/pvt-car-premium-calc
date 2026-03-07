@@ -144,18 +144,8 @@
       "slabs": [
         {
           "age_min": 0,
-          "age_max": 1,
-          "rate_percent": 1
-        },
-        {
-          "age_min": 1,
-          "age_max": 2,
-          "rate_percent": 2
-        },
-        {
-          "age_min": 2,
           "age_max": 100,
-          "rate_percent": 3
+          "rate_percent": 1
         }
       ]
     },
