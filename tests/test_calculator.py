@@ -22,6 +22,7 @@ def _get_sample_input():
         "cc_category": "1000cc_1500cc",
         "zone": "A",
         "purchase_date": "2025-01-01",
+        "renewal_date": "2026-01-01",  # Fixed date for deterministic age=1
         "idv": 125000,
         "ncb_percent": 0.20,  # 20% NCB
         "od_discount_percent": 60,
@@ -90,8 +91,8 @@ def test_basic_calculation():
     # AJ - Geo extension OD (flat 400)
     assert c["geo_extension_od_premium"] == 400.0
 
-    # AK - Built-in CNG OD (2% of basic OD for age 1-2)
-    assert c["builtin_cng_od_premium"] == 82.08
+    # AK - Built-in CNG OD (1% of basic OD)
+    assert c["builtin_cng_od_premium"] == 41.04
 
     # AL - CNG/LPG OD (0 since cng_lpg_si=0)
     assert c["cng_lpg_od_premium"] == 0
@@ -135,10 +136,10 @@ def test_basic_calculation():
     # AY - OD discount = basic_od * 60% = 4103.75 * 0.6 = 2462.25
     assert c["od_discount_amount"] == 2462.25
 
-    # AZ - NCB discount: ((basic_od - od_disc) + nil_dep + rti + geo_od + cng_od + towing + personal_effects) * 0.2
-    # = ((4103.75 - 2462.25) + 820.75 + 250.0 + 400.0 + 82.08 + 75.0 + 500.0) * 0.2
-    # = 3769.33 * 0.2 = 753.87
-    assert c["ncb_discount_amount"] == 753.87
+    # AZ - NCB discount: ((basic_od - od_disc) + nil_dep + rti + geo_od + cng_od + towing + personal_effects + cng_lpg_od) * 0.2
+    # = ((4103.75 - 2462.25) + 820.75 + 250.0 + 400.0 + 41.04 + 75.0 + 500.0 + 0) * 0.2
+    # = 3728.29 * 0.2 = 745.66
+    assert c["ncb_discount_amount"] == 745.66
 
     # BA - Net premium
     assert c["net_premium"] > 0
@@ -147,8 +148,8 @@ def test_basic_calculation():
     assert c["cgst"] > 0
     assert c["sgst"] > 0
 
-    # BD - Total premium
-    assert c["total_premium"] > c["net_premium"]
+    # BD - Total premium (includes +1 rounding adjustment)
+    assert c["total_premium"] == 15336.43
 
 
 def test_result_has_all_86_fields():
@@ -346,8 +347,8 @@ def test_no_addons():
     # Net = basic_od + basic_tp
     assert c["net_premium"] == 7519.75
 
-    # Total = net + 9% CGST + 9% SGST
-    assert c["total_premium"] == 8873.31
+    # Total = net + 9% CGST + 9% SGST + 1
+    assert c["total_premium"] == 8874.31
 
 
 def test_renewal_date_age_calculation():

@@ -266,8 +266,9 @@ class PremiumCalculator:
         calc["sgst"] = self._round(calc["net_premium"] * sgst_rate / 100)
         
         # Step 9: BD - Calculate total premium (Excel column BD)
+        # Always add 1 to total premium (rounding adjustment)
         calc["total_premium"] = self._round(
-            calc["net_premium"] + calc["cgst"] + calc["sgst"]
+            calc["net_premium"] + calc["cgst"] + calc["sgst"] + 1
         )
         
         # Step 10: BE-CH - Create display fields (Excel columns BE-CH) - exact copies of AA-BD
@@ -486,7 +487,7 @@ class PremiumCalculator:
             return 0
         
         # NCB applies to: (Basic OD - OD Discount) + Nil Dep + RTI + Geo Ext OD + Built-in CNG OD
-        #                 + Additional Towing + Personal Effects
+        #                 + Additional Towing + Personal Effects + CNG/LPG OD
         ncb_base = (
             calc["basic_od_premium"] - calc["od_discount_amount"] +
             calc["nil_dep_premium"] +
@@ -494,7 +495,8 @@ class PremiumCalculator:
             calc["geo_extension_od_premium"] +
             calc["builtin_cng_od_premium"] +
             calc["towing_charges_premium"] +
-            calc["personal_effects_premium"]
+            calc["personal_effects_premium"] +
+            calc["cng_lpg_od_premium"]
         )
         
         return self._round(ncb_base * ncb_percent)  # ncb_percent is in decimal (0.2 = 20%)
