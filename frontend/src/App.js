@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
-import { 
+import {
   AppBar, Toolbar, Typography, Container, Tabs, Tab, Box,
   ThemeProvider, createTheme, CssBaseline
 } from '@mui/material';
@@ -14,11 +14,62 @@ import ConfigEditor from './components/ConfigEditor';
 
 const theme = createTheme({
   palette: {
-    primary: {
-      main: '#1976d2',
+    primary: { main: '#0066CC', light: '#3388DD', dark: '#004C99' },
+    secondary: { main: '#5856D6' },
+    background: { default: '#f5f5f7', paper: '#ffffff' },
+    text: { primary: '#1d1d1f', secondary: '#6e6e73' },
+  },
+  typography: {
+    fontFamily: [
+      '-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"',
+      '"Inter"', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif',
+    ].join(','),
+    h4: { fontWeight: 700, letterSpacing: '-0.02em' },
+    h5: { fontWeight: 600, letterSpacing: '-0.01em' },
+    h6: { fontWeight: 600 },
+  },
+  shape: { borderRadius: 16 },
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 16,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+          transition: 'box-shadow 0.2s cubic-bezier(0.25,0.1,0.25,1)',
+          '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.08)' },
+        },
+      },
     },
-    secondary: {
-      main: '#dc004e',
+    MuiButton: {
+      styleOverrides: {
+        root: { borderRadius: 12, textTransform: 'none', fontWeight: 600, padding: '10px 24px' },
+        containedPrimary: {
+          background: 'linear-gradient(135deg, #0066CC 0%, #004C99 100%)',
+          '&:hover': { background: 'linear-gradient(135deg, #3388DD 0%, #0066CC 100%)' },
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: { root: { '& .MuiOutlinedInput-root': { borderRadius: 12 } } },
+    },
+    MuiSelect: {
+      styleOverrides: { root: { borderRadius: 12 } },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: { root: { borderRadius: 12 } },
+    },
+    MuiTab: {
+      styleOverrides: { root: { textTransform: 'none', fontWeight: 500, minHeight: 48 } },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          background: 'rgba(255,255,255,0.72)',
+          backdropFilter: 'saturate(180%) blur(20px)',
+          boxShadow: '0 1px 0 rgba(0,0,0,0.08)',
+          color: '#1d1d1f',
+        },
+      },
     },
   },
 });
@@ -34,41 +85,39 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
-        <Box sx={{ flexGrow: 1 }}>
-          <AppBar position="static">
-            <Toolbar>
-              <CalculateIcon sx={{ mr: 2 }} />
-              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                Motor Premium Calculator - All 86 Excel Fields (A-CH)
+        <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+          <AppBar position="sticky" elevation={0}>
+            <Toolbar sx={{ maxWidth: 1200, width: '100%', mx: 'auto', px: { xs: 2, md: 3 } }}>
+              <CalculateIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+              <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700, color: 'text.primary' }}>
+                Motor Premium Calculator
               </Typography>
             </Toolbar>
           </AppBar>
-          
-          <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-            <Tabs value={tabValue} onChange={handleTabChange} centered sx={{ mb: 3 }}>
-              <Tab icon={<CalculateIcon />} label="Complete Calculator (86 Fields)" />
-              <Tab icon={<UploadFileIcon />} label="CSV Bulk Processing" />
-              <Tab icon={<SettingsIcon />} label="Configuration Editor" />
-            </Tabs>
 
-            <Box sx={{ mt: 3 }}>
+          <Container maxWidth="lg" sx={{ pt: 3, pb: 6 }}>
+            <Box sx={{
+              bgcolor: 'background.paper', borderRadius: 3, mb: 3,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+            }}>
+              <Tabs
+                value={tabValue}
+                onChange={handleTabChange}
+                centered
+                TabIndicatorProps={{ sx: { height: 3, borderRadius: 2 } }}
+              >
+                <Tab icon={<CalculateIcon />} iconPosition="start" label="Calculator" />
+                <Tab icon={<UploadFileIcon />} iconPosition="start" label="CSV Processor" />
+                <Tab icon={<SettingsIcon />} iconPosition="start" label="Config" />
+              </Tabs>
+            </Box>
+
+            <Box>
               {tabValue === 0 && <CompleteCalculator />}
               {tabValue === 1 && <CSVProcessor />}
               {tabValue === 2 && <ConfigEditor />}
             </Box>
           </Container>
-
-          <Box sx={{ bgcolor: 'background.paper', p: 3, mt: 8 }} component="footer">
-            <Typography variant="body2" color="text.secondary" align="center">
-              Motor Insurance Premium Calculator v2.0.0 - Complete Excel Implementation
-            </Typography>
-            <Typography variant="body2" color="text.secondary" align="center">
-              All 86 Fields: 26 Inputs (A-Z) + 30 Calculations (AA-BD) + 30 Display (BE-CH)
-            </Typography>
-            <Typography variant="body2" color="text.secondary" align="center">
-              Powered by JSON-based configuration • No database required
-            </Typography>
-          </Box>
         </Box>
       </Router>
     </ThemeProvider>

@@ -4,14 +4,16 @@ FastAPI Web Application for Premium Calculator
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field, validator
-from typing import Dict, Any, List, Optional
+from pydantic import BaseModel, Field, field_validator
+from typing import Dict, Any
 import io
 import json
 import os
+from pathlib import Path
 
 from .core.calculator import PremiumCalculator
 from .core.csv_processor import CSVProcessor, InputValidator
+from .core.rate_lookup import RateLookupService
 from .config.loader import ConfigurationLoader
 
 
@@ -22,15 +24,6 @@ app = FastAPI(
 )
 
 # Configure CORS - allow all origins for Railway deployment
-# Note: In production with credentials, you must specify exact origins
-# For now, we'll allow all origins without credentials
-allowed_origins = [
-    "http://localhost:3000",  # Local development
-    "http://localhost:8000",
-    "https://pvt-car-premium-calc-production.up.railway.app",  # Production frontend
-    "*"  # Allow any other origin
-]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allow all origins
@@ -78,7 +71,8 @@ class PremiumInput(BaseModel):
     vehicle_type: str = "New"
     cc_category: str = Field(..., description="Cubic capacity category")
     zone: str = Field(..., description="RTO zone (A or B)")
-    purchase_date: str = Field(..., description="Purchase date (YYYY-MM-DD)")
+    purchase_date: str = Field(..., description="Registration/Purchase date (YYYY-MM-DD)")
+    renewal_date: str = Field("", description="Renewal date (YYYY-MM-DD), optional")
     idv: float = Field(..., gt=0, description="Insured Declared Value")
     ncb_percent: float = Field(0, ge=0, le=0.5, description="NCB percentage (0-0.5)")
     od_discount_percent: float = Field(0, ge=0, le=100, description="OD discount %")
@@ -100,15 +94,20 @@ class PremiumInput(BaseModel):
     personal_effects: int = Field(0, ge=0, le=1)
     cpa_owner_driver: int = Field(0, ge=0, le=1)
     ll_paid_driver: int = Field(0, ge=0, le=1)
+    pa_unnamed_persons: int = Field(0, ge=0, description="PA Cover Unnamed Persons - number of persons")
+    pa_unnamed_si: float = Field(0, ge=0, description="PA Cover Unnamed Persons - capital sum insured per person")
+    road_tax_si: float = Field(0, ge=0, description="Road Tax Cover sum insured")
     
-    @validator('cc_category')
+    @field_validator('cc_category')
+    @classmethod
     def validate_cc(cls, v):
         valid = ["upto_1000cc", "1000cc_1500cc", "above_1500cc"]
         if v not in valid:
             raise ValueError(f"Must be one of {valid}")
         return v
     
-    @validator('zone')
+    @field_validator('zone')
+    @classmethod
     def validate_zone(cls, v):
         if v not in ["A", "B"]:
             raise ValueError("Must be A or B")
@@ -149,7 +148,7 @@ def calculate_premium(input_data: PremiumInput):
     """
     try:
         # Convert to dict
-        data = input_data.dict()
+        data = input_data.model_dump()
         
         # Validate
         errors = InputValidator.validate_input(data)
@@ -264,54 +263,59 @@ def get_gst_config():
     return config_loader.load_gst_config()
 
 
-@app.put("/config/od-rates")
-def update_od_rates(config: Dict[str, Any]):
-    """
-    Update OD rates configuration
-    
-    Args:
-        config: New OD rates configuration
-    """
+_CONFIG_DIR = Path(__file__).parent.parent.parent / "config"
+
+
+def _reload_calculator():
+    """Reload calculator with fresh configuration after config changes"""
+    global csv_processor
+    config_loader.clear_cache()
+    new_config = config_loader.load_all_configs()
+    calculator.config = new_config
+    calculator.rate_lookup = RateLookupService(new_config)
+    csv_processor = CSVProcessor(calculator)
+
+
+def _save_config(filename: str, config: Dict[str, Any], label: str):
+    """Save configuration to JSON file and reload calculator"""
     try:
-        # Save to file
-        import json
-        from pathlib import Path
-        
-        config_path = Path(__file__).parent.parent.parent / "config" / "od_base_rates.json"
+        config_path = _CONFIG_DIR / filename
         with open(config_path, 'w') as f:
             json.dump(config, f, indent=2)
-        
-        # Reload config
-        config_loader.clear_cache()
-        
-        return {"success": True, "message": "OD rates updated"}
-    
+        _reload_calculator()
+        return {"success": True, "message": f"{label} updated"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/config/od-rates")
+def update_od_rates(config: Dict[str, Any]):
+    """Update OD rates configuration"""
+    return _save_config("od_base_rates.json", config, "OD rates")
 
 
 @app.put("/config/addons")
 def update_addon_config(config: Dict[str, Any]):
-    """
-    Update add-on configuration
-    
-    Args:
-        config: New add-on configuration
-    """
-    try:
-        import json
-        from pathlib import Path
-        
-        config_path = Path(__file__).parent.parent.parent / "config" / "addon_premiums.json"
-        with open(config_path, 'w') as f:
-            json.dump(config, f, indent=2)
-        
-        config_loader.clear_cache()
-        
-        return {"success": True, "message": "Add-on config updated"}
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    """Update add-on configuration"""
+    return _save_config("addon_premiums.json", config, "Add-on config")
+
+
+@app.put("/config/tp-rates")
+def update_tp_rates(config: Dict[str, Any]):
+    """Update TP rates configuration"""
+    return _save_config("tp_base_rates.json", config, "TP rates")
+
+
+@app.put("/config/discounts")
+def update_discount_config(config: Dict[str, Any]):
+    """Update discount rules configuration"""
+    return _save_config("discount_rules.json", config, "Discount rules")
+
+
+@app.put("/config/gst")
+def update_gst_config(config: Dict[str, Any]):
+    """Update GST configuration"""
+    return _save_config("gst_config.json", config, "GST config")
 
 
 @app.get("/validate")

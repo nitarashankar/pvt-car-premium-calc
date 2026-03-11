@@ -47,3 +47,6 @@ Thumbs.db
 
 # Excel temporary files
 ~$*.xlsx
+node_modules
+frontend/build
+*.log

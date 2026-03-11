@@ -45,7 +45,11 @@ class PremiumCalculator:
         calculate_tp = policy_type in ["Package", "Third Party"]
         
         # Step 1: AA - Calculate vehicle age in years (Excel column AA)
-        calc["age_years"] = self._calculate_age(input_data["purchase_date"])
+        # Use renewal_date if provided, otherwise fall back to today
+        calc["age_years"] = self._calculate_age(
+            input_data["purchase_date"],
+            input_data.get("renewal_date")
+        )
         
         # Step 2: AB - Get OD base rate (Excel column AB)
         # Only calculate if OD is needed
@@ -233,6 +237,12 @@ class PremiumCalculator:
         else:
             calc["geo_extension_tp_premium"] = 0
         
+        # PA Cover - Unnamed Persons TP Premium
+        if calculate_tp:
+            calc["pa_unnamed_premium"] = self._calculate_pa_unnamed(input_data)
+        else:
+            calc["pa_unnamed_premium"] = 0
+        
         # Step 6: AY-AZ - Calculate discounts (Excel columns AY-AZ)
         # Only apply discounts if OD is calculated
         # AY - OD Discount
@@ -262,8 +272,9 @@ class PremiumCalculator:
         calc["sgst"] = self._round(calc["net_premium"] * sgst_rate / 100)
         
         # Step 9: BD - Calculate total premium (Excel column BD)
+        # Always add 1 to total premium (rounding adjustment)
         calc["total_premium"] = self._round(
-            calc["net_premium"] + calc["cgst"] + calc["sgst"]
+            calc["net_premium"] + calc["cgst"] + calc["sgst"] + 1
         )
         
         # Step 10: BE-CH - Create display fields (Excel columns BE-CH) - exact copies of AA-BD
@@ -293,6 +304,7 @@ class PremiumCalculator:
             "ll_paid_driver_premium_display": calc["ll_paid_driver_premium"],
             "cng_lpg_tp_premium_display": calc["cng_lpg_tp_premium"],
             "geo_extension_tp_premium_display": calc["geo_extension_tp_premium"],
+            "pa_unnamed_premium_display": calc["pa_unnamed_premium"],
             "od_discount_amount_display": calc["od_discount_amount"],
             "ncb_discount_amount_display": calc["ncb_discount_amount"],
             "net_premium_display": calc["net_premium"],
@@ -336,19 +348,32 @@ class PremiumCalculator:
             # Default to Package if unrecognized
             return "Package"
     
-    def _calculate_age(self, purchase_date) -> int:
-        """Calculate vehicle age in years"""
+    def _calculate_age(self, purchase_date, renewal_date=None) -> float:
+        """
+        Calculate vehicle age in years with 2 decimal places.
+        
+        Age = difference between renewal_date (or today) and purchase_date (registration date).
+        Returns float rounded to 2 decimal places (e.g. 3.42 years).
+        """
         if isinstance(purchase_date, str):
             purchase_date = datetime.fromisoformat(purchase_date.split()[0]).date()
         elif isinstance(purchase_date, datetime):
             purchase_date = purchase_date.date()
         
-        today = date.today()
-        age = today.year - purchase_date.year
-        if (today.month, today.day) < (purchase_date.month, purchase_date.day):
-            age -= 1
+        if renewal_date:
+            if isinstance(renewal_date, str):
+                ref_date = datetime.fromisoformat(renewal_date.split()[0]).date()
+            elif isinstance(renewal_date, datetime):
+                ref_date = renewal_date.date()
+            else:
+                ref_date = renewal_date
+        else:
+            ref_date = date.today()
         
-        return max(0, age)
+        delta = ref_date - purchase_date
+        age = delta.days / 365.25
+        
+        return round(max(0, age), 2)
     
     def _calculate_nil_dep(self, input_data, basic_od, age) -> float:
         """Calculate Nil Depreciation premium"""
@@ -453,13 +478,34 @@ class PremiumCalculator:
         return 0
     
     def _calculate_road_tax(self, input_data) -> float:
-        """Calculate road tax cover premium"""
+        """Calculate road tax cover premium based on user-entered sum insured"""
         if not input_data.get("road_tax_cover", 0):
             return 0
         
-        # Road tax is 0.25% of (IDV * 20%)
-        base_amount = input_data["idv"] * 0.20
-        premium = base_amount * 0.25 / 100
+        road_tax_si = input_data.get("road_tax_si", 0)
+        if road_tax_si == 0:
+            # Fallback to IDV-based calculation if no SI provided
+            road_tax_si = input_data["idv"] * 0.20
+        
+        # Premium = 0.25% of sum insured
+        premium = road_tax_si * 0.25 / 100
+        return self._round(premium)
+    
+    def _calculate_pa_unnamed(self, input_data) -> float:
+        """
+        Calculate PA Cover - Unnamed Persons premium.
+        Formula: (Capital Sum Insured / 100000) × 50 × Number of Persons
+        """
+        if not input_data.get("pa_unnamed_persons", 0):
+            return 0
+        
+        persons = int(input_data.get("pa_unnamed_persons", 0))
+        si = float(input_data.get("pa_unnamed_si", 0))
+        
+        if persons <= 0 or si <= 0:
+            return 0
+        
+        premium = (si / 100000) * 50 * persons
         return self._round(premium)
     
     def _calculate_ncb_discount(self, input_data, calc) -> float:
@@ -469,12 +515,16 @@ class PremiumCalculator:
             return 0
         
         # NCB applies to: (Basic OD - OD Discount) + Nil Dep + RTI + Geo Ext OD + Built-in CNG OD
+        #                 + Additional Towing + Personal Effects + CNG/LPG OD
         ncb_base = (
             calc["basic_od_premium"] - calc["od_discount_amount"] +
             calc["nil_dep_premium"] +
             calc["return_to_invoice_premium"] +
             calc["geo_extension_od_premium"] +
-            calc["builtin_cng_od_premium"]
+            calc["builtin_cng_od_premium"] +
+            calc["towing_charges_premium"] +
+            calc["personal_effects_premium"] +
+            calc["cng_lpg_od_premium"]
         )
         
         return self._round(ncb_base * ncb_percent)  # ncb_percent is in decimal (0.2 = 20%)
@@ -508,7 +558,8 @@ class PremiumCalculator:
             calc["cpa_owner_premium"] +
             calc["ll_paid_driver_premium"] +
             calc["cng_lpg_tp_premium"] +
-            calc["geo_extension_tp_premium"]
+            calc["geo_extension_tp_premium"] +
+            calc["pa_unnamed_premium"]
         )
         
         # Net = (OD + TP) - Discounts

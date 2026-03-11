@@ -4,7 +4,6 @@ Command Line Interface for Premium Calculator
 import argparse
 import json
 import sys
-from pathlib import Path
 
 from .core.calculator import PremiumCalculator
 

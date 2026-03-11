@@ -87,8 +87,23 @@ export const calculatorAPI = {
     return response.data;
   },
 
+  updateTPRates: async (config) => {
+    const response = await api.put('/config/tp-rates', config);
+    return response.data;
+  },
+
   updateAddonConfig: async (config) => {
     const response = await api.put('/config/addons', config);
+    return response.data;
+  },
+
+  updateDiscountConfig: async (config) => {
+    const response = await api.put('/config/discounts', config);
+    return response.data;
+  },
+
+  updateGSTConfig: async (config) => {
+    const response = await api.put('/config/gst', config);
     return response.data;
   },
 
