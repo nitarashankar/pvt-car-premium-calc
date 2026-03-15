@@ -1,0 +1,5 @@
+{
+  "description": "GCV GST Configuration - Split IGST for OD and TP",
+  "od_igst_percent": 18,
+  "tp_igst_percent": 5
+}

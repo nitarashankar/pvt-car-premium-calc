@@ -118,6 +118,54 @@ export const calculatorAPI = {
     const response = await api.get('/health');
     return response.data;
   },
+
+  // ============================================================
+  // GCV (Goods Carrying Vehicle) API Methods
+  // ============================================================
+
+  // Calculate GCV premium
+  calculateGCVPremium: async (inputData) => {
+    const payload = { ...inputData };
+    const ncbValue = Number(payload.ncb_percent);
+
+    if (!Number.isNaN(ncbValue)) {
+      payload.ncb_percent = ncbValue > 1 ? ncbValue / 100 : ncbValue;
+    }
+
+    const response = await api.post('/gcv/calculate', payload);
+    return response.data;
+  },
+
+  // GCV Config endpoints
+  getGCVODRates: async () => {
+    const response = await api.get('/gcv/config/od-rates');
+    return response.data;
+  },
+
+  getGCVTPRates: async () => {
+    const response = await api.get('/gcv/config/tp-rates');
+    return response.data;
+  },
+
+  getGCVGSTConfig: async () => {
+    const response = await api.get('/gcv/config/gst');
+    return response.data;
+  },
+
+  updateGCVODRates: async (config) => {
+    const response = await api.put('/gcv/config/od-rates', config);
+    return response.data;
+  },
+
+  updateGCVTPRates: async (config) => {
+    const response = await api.put('/gcv/config/tp-rates', config);
+    return response.data;
+  },
+
+  updateGCVGSTConfig: async (config) => {
+    const response = await api.put('/gcv/config/gst', config);
+    return response.data;
+  },
 };
 
 export default calculatorAPI;

@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 
 from .core.calculator import PremiumCalculator
+from .core.gcv_calculator import GCVPremiumCalculator
 from .core.csv_processor import CSVProcessor, InputValidator
 from .core.rate_lookup import RateLookupService
 from .config.loader import ConfigurationLoader
@@ -51,6 +52,10 @@ try:
     print("Initializing CSV processor...")
     csv_processor = CSVProcessor(calculator)
     print("✓ CSV processor initialized")
+
+    print("Initializing GCV calculator...")
+    gcv_calculator = GCVPremiumCalculator()
+    print("✓ GCV calculator initialized")
     
     print("=" * 60)
     print("API initialization complete!")
@@ -111,6 +116,40 @@ class PremiumInput(BaseModel):
     def validate_zone(cls, v):
         if v not in ["A", "B"]:
             raise ValueError("Must be A or B")
+        return v
+
+
+class GCVPremiumInput(BaseModel):
+    """Input model for GCV premium calculation"""
+    policy_type: str = "Package"
+    vehicle_type: str = "New"
+    gvw: float = Field(..., gt=0, description="Gross Vehicle Weight in kg")
+    zone: str = Field(..., description="RTO zone (A, B, or C)")
+    purchase_date: str = Field(..., description="Registration/Purchase date (YYYY-MM-DD)")
+    renewal_date: str = Field("", description="Renewal date (YYYY-MM-DD), optional")
+    idv: float = Field(..., gt=0, description="Insured Declared Value")
+    ncb_percent: float = Field(0, ge=0, le=0.5, description="NCB percentage (0-0.5)")
+    od_discount_percent: float = Field(0, ge=0, le=100, description="OD discount %")
+    builtin_cng_lpg: int = Field(0, ge=0, le=1)
+    cng_lpg_si: float = Field(0, ge=0)
+    nil_dep: int = Field(0, ge=0, le=1)
+    return_to_invoice: int = Field(0, ge=0, le=1)
+    consumables: int = Field(0, ge=0, le=1)
+    road_side_assistance: int = Field(0, ge=0, le=1)
+    additional_towing: int = Field(0, ge=0, le=1)
+    additional_towing_si: float = Field(0, ge=0, description="Additional Towing Charges SI")
+    imt23_cover: int = Field(0, ge=0, le=1)
+    electrical_accessories_si: float = Field(0, ge=0, description="Electrical Accessories SI")
+    non_electrical_accessories_si: float = Field(0, ge=0, description="Non-Electrical Accessories SI")
+    cpa_owner_driver: int = Field(0, ge=0, le=1)
+    ll_paid_driver: int = Field(0, ge=0, description="LL to paid driver - number of drivers")
+    nfpp: int = Field(0, ge=0, le=1, description="No Fault Personal Protection")
+
+    @field_validator('zone')
+    @classmethod
+    def validate_gcv_zone(cls, v):
+        if v not in ["A", "B", "C"]:
+            raise ValueError("Must be A, B, or C")
         return v
 
 
@@ -348,6 +387,98 @@ def validate_input(
         "valid": len(errors) == 0,
         "errors": errors
     }
+
+
+# ============================================================
+# GCV (Goods Carrying Vehicle) Endpoints
+# ============================================================
+
+_GCV_CONFIG_DIR = Path(__file__).parent.parent.parent / "config" / "gcv"
+
+
+def _reload_gcv_calculator():
+    """Reload GCV calculator with fresh configuration"""
+    gcv_calculator.reload_config()
+
+
+def _save_gcv_config(filename: str, config: Dict[str, Any], label: str):
+    """Save GCV configuration to JSON file and reload calculator"""
+    try:
+        config_path = _GCV_CONFIG_DIR / filename
+        with open(config_path, 'w') as f:
+            json.dump(config, f, indent=2)
+        _reload_gcv_calculator()
+        return {"success": True, "message": f"GCV {label} updated"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/gcv/calculate")
+def calculate_gcv_premium(input_data: GCVPremiumInput):
+    """
+    Calculate GCV premium for single input
+
+    Args:
+        input_data: GCV premium calculation input
+
+    Returns:
+        Calculation results with premium breakdown
+    """
+    try:
+        data = input_data.model_dump()
+
+        # Convert NCB from percentage to decimal if needed
+        ncb_value = data.get("ncb_percent", 0)
+        if ncb_value > 1:
+            data["ncb_percent"] = ncb_value / 100
+
+        result = gcv_calculator.calculate(data)
+
+        return {
+            "success": True,
+            "data": result
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/gcv/config/od-rates")
+def get_gcv_od_rates():
+    """Get GCV OD base rates configuration"""
+    return gcv_calculator.od_rates
+
+
+@app.get("/gcv/config/tp-rates")
+def get_gcv_tp_rates():
+    """Get GCV TP base rates configuration"""
+    return gcv_calculator.tp_rates
+
+
+@app.get("/gcv/config/gst")
+def get_gcv_gst_config():
+    """Get GCV GST configuration"""
+    return gcv_calculator.gst_config
+
+
+@app.put("/gcv/config/od-rates")
+def update_gcv_od_rates(config: Dict[str, Any]):
+    """Update GCV OD rates configuration"""
+    return _save_gcv_config("od_rates.json", config, "OD rates")
+
+
+@app.put("/gcv/config/tp-rates")
+def update_gcv_tp_rates(config: Dict[str, Any]):
+    """Update GCV TP rates configuration"""
+    return _save_gcv_config("tp_rates.json", config, "TP rates")
+
+
+@app.put("/gcv/config/gst")
+def update_gcv_gst_config(config: Dict[str, Any]):
+    """Update GCV GST configuration"""
+    return _save_gcv_config("gst_config.json", config, "GST config")
 
 
 if __name__ == "__main__":

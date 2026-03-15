@@ -1,0 +1,14 @@
+{
+  "description": "GCV OD Base Rates by Age and Zone",
+  "rates": [
+    { "age_min": 0, "age_max": 5, "zone": "A", "rate_percent": 1.751 },
+    { "age_min": 0, "age_max": 5, "zone": "B", "rate_percent": 1.743 },
+    { "age_min": 0, "age_max": 5, "zone": "C", "rate_percent": 1.726 },
+    { "age_min": 5, "age_max": 7, "zone": "A", "rate_percent": 1.795 },
+    { "age_min": 5, "age_max": 7, "zone": "B", "rate_percent": 1.787 },
+    { "age_min": 5, "age_max": 7, "zone": "C", "rate_percent": 1.77 },
+    { "age_min": 7, "age_max": 100, "zone": "A", "rate_percent": 1.839 },
+    { "age_min": 7, "age_max": 100, "zone": "B", "rate_percent": 1.83 },
+    { "age_min": 7, "age_max": 100, "zone": "C", "rate_percent": 1.812 }
+  ]
+}
