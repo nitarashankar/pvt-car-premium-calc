@@ -266,7 +266,8 @@ class GCVPremiumCalculator:
             calc["nfpp_non_employee_premium"]
         )
 
-        # Step 22: AR - IGST @18% - Others = (net_od + cpa + ll_driver + nfpp_employee + nfpp_non_employee) * 18%
+        # Step 22: AR - IGST @18% - Others = (net_od + cpa + ll_driver + nfpp_emp + nfpp_non_emp) * 18%
+        # NFPP is a TP add-on but attracts 18% IGST (same as OD/CPA/LL)
         od_igst_rate = self.gst_config["od_igst_percent"]
         calc["igst_od"] = self._round(
             (calc["net_od_premium"] + calc["cpa_owner_premium"] +
