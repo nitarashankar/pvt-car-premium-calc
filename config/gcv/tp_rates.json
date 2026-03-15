@@ -1,0 +1,10 @@
+{
+  "description": "GCV TP Base Rates by GVW (Gross Vehicle Weight)",
+  "rates": [
+    { "gvw_min": 0, "gvw_max": 7500, "premium": 16049 },
+    { "gvw_min": 7501, "gvw_max": 12000, "premium": 27186 },
+    { "gvw_min": 12001, "gvw_max": 20000, "premium": 35313 },
+    { "gvw_min": 20001, "gvw_max": 40000, "premium": 43950 },
+    { "gvw_min": 40001, "gvw_max": 999999, "premium": 44242 }
+  ]
+}

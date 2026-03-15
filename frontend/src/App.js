@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar, Toolbar, Typography, Container, Tabs, Tab, Box,
   ThemeProvider, createTheme, CssBaseline
@@ -7,8 +7,10 @@ import {
 import CalculateIcon from '@mui/icons-material/Calculate';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import SettingsIcon from '@mui/icons-material/Settings';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 
 import CompleteCalculator from './components/CompleteCalculator';
+import GCVCalculator from './components/GCVCalculator';
 import CSVProcessor from './components/CSVProcessor';
 import ConfigEditor from './components/ConfigEditor';
 
@@ -74,7 +76,7 @@ const theme = createTheme({
   },
 });
 
-function App() {
+function PvtCarPage() {
   const [tabValue, setTabValue] = useState(0);
 
   const handleTabChange = (event, newValue) => {
@@ -82,43 +84,77 @@ function App() {
   };
 
   return (
+    <>
+      <Box sx={{
+        bgcolor: 'background.paper', borderRadius: 3, mb: 3,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      }}>
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          centered
+          TabIndicatorProps={{ sx: { height: 3, borderRadius: 2 } }}
+        >
+          <Tab icon={<CalculateIcon />} iconPosition="start" label="Calculator" />
+          <Tab icon={<UploadFileIcon />} iconPosition="start" label="CSV Processor" />
+          <Tab icon={<SettingsIcon />} iconPosition="start" label="Config" />
+        </Tabs>
+      </Box>
+      <Box>
+        {tabValue === 0 && <CompleteCalculator />}
+        {tabValue === 1 && <CSVProcessor />}
+        {tabValue === 2 && <ConfigEditor />}
+      </Box>
+    </>
+  );
+}
+
+function GCVPage() {
+  return <GCVCalculator />;
+}
+
+function AppContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isGCV = location.pathname.startsWith('/gcv');
+
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      <AppBar position="sticky" elevation={0}>
+        <Toolbar sx={{ maxWidth: 1200, width: '100%', mx: 'auto', px: { xs: 2, md: 3 } }}>
+          <CalculateIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700, color: 'text.primary' }}>
+            Motor Premium Calculator
+          </Typography>
+          <Tabs
+            value={isGCV ? 1 : 0}
+            onChange={(e, newVal) => navigate(newVal === 1 ? '/gcv' : '/')}
+            textColor="primary"
+            indicatorColor="primary"
+            TabIndicatorProps={{ sx: { height: 3, borderRadius: 2 } }}
+          >
+            <Tab icon={<CalculateIcon />} iconPosition="start" label="Private Car" sx={{ textTransform: 'none', fontWeight: 500 }} />
+            <Tab icon={<LocalShippingIcon />} iconPosition="start" label="GCV" sx={{ textTransform: 'none', fontWeight: 500 }} />
+          </Tabs>
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="lg" sx={{ pt: 3, pb: 6 }}>
+        <Routes>
+          <Route path="/gcv" element={<GCVPage />} />
+          <Route path="/*" element={<PvtCarPage />} />
+        </Routes>
+      </Container>
+    </Box>
+  );
+}
+
+function App() {
+  return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
-        <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-          <AppBar position="sticky" elevation={0}>
-            <Toolbar sx={{ maxWidth: 1200, width: '100%', mx: 'auto', px: { xs: 2, md: 3 } }}>
-              <CalculateIcon sx={{ mr: 1.5, color: 'primary.main' }} />
-              <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700, color: 'text.primary' }}>
-                Motor Premium Calculator
-              </Typography>
-            </Toolbar>
-          </AppBar>
-
-          <Container maxWidth="lg" sx={{ pt: 3, pb: 6 }}>
-            <Box sx={{
-              bgcolor: 'background.paper', borderRadius: 3, mb: 3,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-            }}>
-              <Tabs
-                value={tabValue}
-                onChange={handleTabChange}
-                centered
-                TabIndicatorProps={{ sx: { height: 3, borderRadius: 2 } }}
-              >
-                <Tab icon={<CalculateIcon />} iconPosition="start" label="Calculator" />
-                <Tab icon={<UploadFileIcon />} iconPosition="start" label="CSV Processor" />
-                <Tab icon={<SettingsIcon />} iconPosition="start" label="Config" />
-              </Tabs>
-            </Box>
-
-            <Box>
-              {tabValue === 0 && <CompleteCalculator />}
-              {tabValue === 1 && <CSVProcessor />}
-              {tabValue === 2 && <ConfigEditor />}
-            </Box>
-          </Container>
-        </Box>
+        <AppContent />
       </Router>
     </ThemeProvider>
   );
