@@ -218,6 +218,20 @@ class GCVPremiumCalculator:
         else:
             calc["cng_lpg_tp_premium"] = 0
 
+        # Step 18a: NFPP Employee = 75 * count
+        if calculate_tp:
+            nfpp_emp_count = int(input_data.get("nfpp_employee", 0))
+            calc["nfpp_employee_premium"] = self._round(75.0 * nfpp_emp_count) if nfpp_emp_count > 0 else 0
+        else:
+            calc["nfpp_employee_premium"] = 0
+
+        # Step 18b: NFPP Non-Employee = 75 * count
+        if calculate_tp:
+            nfpp_non_emp_count = int(input_data.get("nfpp_non_employee", 0))
+            calc["nfpp_non_employee_premium"] = self._round(75.0 * nfpp_non_emp_count) if nfpp_non_emp_count > 0 else 0
+        else:
+            calc["nfpp_non_employee_premium"] = 0
+
         # Step 19: AO - NCB Discount
         if calculate_od:
             calc["ncb_discount_amount"] = self._calculate_ncb_discount(input_data, calc)
@@ -247,14 +261,18 @@ class GCVPremiumCalculator:
             calc["basic_tp_premium"] +
             calc["cpa_owner_premium"] +
             calc["ll_paid_driver_premium"] +
-            calc["cng_lpg_tp_premium"]
+            calc["cng_lpg_tp_premium"] +
+            calc["nfpp_employee_premium"] +
+            calc["nfpp_non_employee_premium"]
         )
 
-        # Step 22: AR - IGST OD @18% = (net_od + cpa + ll_driver) * 18%
+        # Step 22: AR - IGST @18% - Others = (net_od + cpa + ll_driver + nfpp_employee + nfpp_non_employee) * 18%
         od_igst_rate = self.gst_config["od_igst_percent"]
         calc["igst_od"] = self._round(
             (calc["net_od_premium"] + calc["cpa_owner_premium"] +
-             calc["ll_paid_driver_premium"]) * od_igst_rate / 100
+             calc["ll_paid_driver_premium"] +
+             calc["nfpp_employee_premium"] +
+             calc["nfpp_non_employee_premium"]) * od_igst_rate / 100
         )
 
         # Step 23: AS - IGST TP @5% = (basic_tp + cng_tp) * 5%
@@ -416,6 +434,7 @@ class GCVPremiumCalculator:
     def _calculate_towing(self, input_data) -> float:
         """
         Additional Towing Charges: IF enabled
+        SI capped at Rs.20,000 for GCV
         SI <= 10000: SI * 5%
         Otherwise: SI * 7.5%
         """
@@ -424,6 +443,8 @@ class GCVPremiumCalculator:
         si = float(input_data.get("additional_towing_si", 0))
         if si <= 0:
             return 0
+        # Cap towing SI at 20000 for GCV
+        si = min(si, 20000)
         if si <= 10000:
             return self._round(si * 0.05)
         else:

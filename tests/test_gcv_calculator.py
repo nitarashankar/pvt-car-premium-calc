@@ -347,3 +347,101 @@ def test_gcv_od_discount_formula(calculator):
         (c["basic_od_premium"] + c["non_electrical_accessories_premium"]) * 50 / 100, 2
     )
     assert c["od_discount_amount"] == expected_discount
+
+
+def test_gcv_nfpp_employee(calculator):
+    """Test NFPP Employee premium = 75 * count"""
+    input_data = {
+        "policy_type": "Package",
+        "vehicle_type": "New",
+        "gvw": 5000,
+        "zone": "C",
+        "purchase_date": "2024-01-01",
+        "renewal_date": "2025-06-01",
+        "idv": 500000,
+        "nfpp_employee": 5,
+        "nfpp_non_employee": 0,
+    }
+    result = calculator.calculate(input_data)
+    c = result["calculations"]
+
+    assert c["nfpp_employee_premium"] == 375.0  # 75 * 5
+    assert c["nfpp_non_employee_premium"] == 0
+    # NFPP included in net TP
+    assert c["nfpp_employee_premium"] > 0
+
+
+def test_gcv_nfpp_non_employee(calculator):
+    """Test NFPP Non-Employee premium = 75 * count"""
+    input_data = {
+        "policy_type": "Package",
+        "vehicle_type": "New",
+        "gvw": 5000,
+        "zone": "C",
+        "purchase_date": "2024-01-01",
+        "renewal_date": "2025-06-01",
+        "idv": 500000,
+        "nfpp_employee": 0,
+        "nfpp_non_employee": 3,
+    }
+    result = calculator.calculate(input_data)
+    c = result["calculations"]
+
+    assert c["nfpp_non_employee_premium"] == 225.0  # 75 * 3
+    assert c["nfpp_employee_premium"] == 0
+
+
+def test_gcv_nfpp_both_types(calculator):
+    """Test both NFPP types together, included in TP and IGST @18%"""
+    input_data = {
+        "policy_type": "Package",
+        "vehicle_type": "New",
+        "gvw": 5000,
+        "zone": "C",
+        "purchase_date": "2024-01-01",
+        "renewal_date": "2025-06-01",
+        "idv": 500000,
+        "nfpp_employee": 4,
+        "nfpp_non_employee": 2,
+        "cpa_owner_driver": 0,
+        "ll_paid_driver": 0,
+    }
+    result = calculator.calculate(input_data)
+    c = result["calculations"]
+
+    assert c["nfpp_employee_premium"] == 300.0  # 75 * 4
+    assert c["nfpp_non_employee_premium"] == 150.0  # 75 * 2
+
+    # Net TP includes NFPP
+    expected_net_tp = c["basic_tp_premium"] + c["nfpp_employee_premium"] + c["nfpp_non_employee_premium"] + c["cng_lpg_tp_premium"]
+    assert abs(c["net_tp_premium"] - expected_net_tp) < 0.02
+
+    # IGST @18% includes NFPP premiums
+    expected_igst_od = round((c["net_od_premium"] + c["nfpp_employee_premium"] + c["nfpp_non_employee_premium"]) * 0.18, 2)
+    assert abs(c["igst_od"] - expected_igst_od) < 0.02
+
+
+def test_gcv_towing_cap_at_20000(calculator):
+    """Test towing SI is capped at Rs.20,000 for GCV"""
+    base = {
+        "policy_type": "Standalone OD",
+        "vehicle_type": "New",
+        "gvw": 5000,
+        "zone": "C",
+        "purchase_date": "2024-06-01",
+        "renewal_date": "2025-06-01",
+        "idv": 500000,
+        "additional_towing": 1,
+    }
+
+    # SI = 20000: exactly at cap, 7.5% rate
+    result = calculator.calculate({**base, "additional_towing_si": 20000})
+    assert result["calculations"]["towing_charges_premium"] == 1500.0  # 20000 * 7.5%
+
+    # SI = 30000: should be capped at 20000, so still 1500
+    result = calculator.calculate({**base, "additional_towing_si": 30000})
+    assert result["calculations"]["towing_charges_premium"] == 1500.0  # capped at 20000 * 7.5%
+
+    # SI = 50000: also capped at 20000
+    result = calculator.calculate({**base, "additional_towing_si": 50000})
+    assert result["calculations"]["towing_charges_premium"] == 1500.0  # capped at 20000 * 7.5%

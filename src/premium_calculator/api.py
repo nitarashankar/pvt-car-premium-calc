@@ -143,7 +143,8 @@ class GCVPremiumInput(BaseModel):
     non_electrical_accessories_si: float = Field(0, ge=0, description="Non-Electrical Accessories SI")
     cpa_owner_driver: int = Field(0, ge=0, le=1)
     ll_paid_driver: int = Field(0, ge=0, description="LL to paid driver - number of drivers")
-    nfpp: int = Field(0, ge=0, le=1, description="No Fault Personal Protection")
+    nfpp_employee: int = Field(0, ge=0, description="NFPP (Employee) - number of passengers")
+    nfpp_non_employee: int = Field(0, ge=0, description="NFPP (Non-Employee) - number of passengers")
 
     @field_validator('zone')
     @classmethod

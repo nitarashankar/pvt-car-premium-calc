@@ -17,6 +17,8 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import PictureAsPdfOutlined from '@mui/icons-material/PictureAsPdfOutlined';
 import PersonOutlined from '@mui/icons-material/PersonOutlined';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
 import { jsPDF } from 'jspdf';
 import calculatorAPI from '../services/api';
 
@@ -59,8 +61,9 @@ const defaultFormData = {
   electrical_accessories_si: 0,
   non_electrical_accessories_si: 0,
   cpa_owner_driver: 1,
-  ll_paid_driver: 1,
-  nfpp: 0,
+  ll_paid_driver: 0,
+  nfpp_employee: 0,
+  nfpp_non_employee: 0,
 };
 
 const formatCurrency = (value) => {
@@ -81,6 +84,45 @@ const sectionHeader = (icon, title) => (
   </Box>
 );
 
+const StepperInput = ({ label, value, onChange, helperText }) => (
+  <Box>
+    <Typography variant="body2" sx={{ mb: 0.5, color: '#1d1d1f' }}>{label}</Typography>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+      <IconButton
+        size="small"
+        onClick={() => onChange(Math.max(0, (Number(value) || 0) - 1))}
+        sx={{
+          border: '1px solid #d2d2d7', borderRadius: '8px 0 0 8px',
+          bgcolor: '#f5f5f7', height: 36, width: 36,
+          '&:hover': { bgcolor: '#e8e8ed' },
+        }}
+      >
+        <RemoveIcon fontSize="small" />
+      </IconButton>
+      <Box sx={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        border: '1px solid #d2d2d7', borderLeft: 'none', borderRight: 'none',
+        height: 36, minWidth: 44, bgcolor: '#fff',
+        fontWeight: 600, fontSize: '0.95rem', color: '#1d1d1f',
+      }}>
+        {Number(value) || 0}
+      </Box>
+      <IconButton
+        size="small"
+        onClick={() => onChange((Number(value) || 0) + 1)}
+        sx={{
+          border: '1px solid #d2d2d7', borderRadius: '0 8px 8px 0',
+          bgcolor: '#f5f5f7', height: 36, width: 36,
+          '&:hover': { bgcolor: '#e8e8ed' },
+        }}
+      >
+        <AddIcon fontSize="small" />
+      </IconButton>
+    </Box>
+    {helperText && <Typography variant="caption" sx={{ color: '#6e6e73', mt: 0.5, display: 'block' }}>{helperText}</Typography>}
+  </Box>
+);
+
 const GCVCalculator = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -92,15 +134,15 @@ const GCVCalculator = () => {
   const vehicleAge = useMemo(() => getVehicleAge(formData.purchase_date, formData.renewal_date), [formData.purchase_date, formData.renewal_date]);
   const ncbValue = Number(formData.ncb_percent) || 0;
 
-  // Nil Dep rules - same as PVT car
+  // Nil Dep rules - GCV specific: 3 years, or 5 years with NCB > 25%
   const nilDepDisabled = useMemo(() => {
-    if (vehicleAge > 6.5) return true;
-    if (vehicleAge > 4.5 && ncbValue < 25) return true;
+    if (vehicleAge > 5) return true;
+    if (vehicleAge > 3 && ncbValue <= 25) return true;
     return false;
   }, [vehicleAge, ncbValue]);
   const nilDepMessage = useMemo(() => {
-    if (vehicleAge > 6.5) return 'Nil depreciation cover is not allowed for vehicles more than 6.5 years old.';
-    if (vehicleAge > 4.5 && ncbValue < 25) return 'Nil Depreciation cover is not allowed for vehicles more than 5 years old.';
+    if (vehicleAge > 5) return 'Nil depreciation cover is not allowed for vehicles more than 5 years old.';
+    if (vehicleAge > 3 && ncbValue <= 25) return 'Nil Depreciation cover is not allowed for vehicles more than 3 years old without NCB > 25%.';
     return '';
   }, [vehicleAge, ncbValue]);
 
@@ -125,7 +167,7 @@ const GCVCalculator = () => {
           name === 'renewal_date' ? value : prev.renewal_date
         );
         const newNcb = Number(prev.ncb_percent) || 0;
-        if (newAge > 6.5 || (newAge > 4.5 && newNcb < 25)) {
+        if (newAge > 5 || (newAge > 3 && newNcb <= 25)) {
           updated.nil_dep = 0;
         }
         if (newAge > 2.5) {
@@ -137,7 +179,7 @@ const GCVCalculator = () => {
       }
       if (name === 'ncb_percent') {
         const newNcb = Number(value) || 0;
-        if (newNcb < 25 && vehicleAge > 4.5) {
+        if (newNcb <= 25 && vehicleAge > 3) {
           updated.nil_dep = 0;
         }
       }
@@ -332,6 +374,8 @@ const GCVCalculator = () => {
     if (c.cpa_owner_premium > 0) addRow('CPA Owner Driver (SI - Rs.15L)', c.cpa_owner_premium);
     if (c.ll_paid_driver_premium > 0) addRow('LL to Paid Driver', c.ll_paid_driver_premium);
     if (c.cng_lpg_tp_premium > 0) addRow('CNG/LPG TP', c.cng_lpg_tp_premium);
+    if (c.nfpp_employee_premium > 0) addRow('NFPP (Employee)', c.nfpp_employee_premium);
+    if (c.nfpp_non_employee_premium > 0) addRow('NFPP (Non-Employee)', c.nfpp_non_employee_premium);
 
     // Discounts
     if (showDiscountInPDF && (c.od_discount_amount > 0 || c.ncb_discount_amount > 0)) {
@@ -348,7 +392,7 @@ const GCVCalculator = () => {
     y += 5;
     addRow('Net OD Premium', c.net_od_premium, true);
     addRow('Net TP Premium', c.net_tp_premium, true);
-    addRow('IGST on OD @18%', c.igst_od);
+    addRow('IGST @18% - Others', c.igst_od);
     addRow('IGST on TP @5%', c.igst_tp);
     y += 2;
     doc.setFillColor(0, 102, 204);
@@ -607,20 +651,16 @@ const GCVCalculator = () => {
                   sx={{ ml: 0 }}
                 />
               </Grid>
-              {/* NFPP */}
-              <Grid item xs={12} sm={6} md={4}>
-                <FormControlLabel
-                  control={<Switch checked={!!formData.nfpp} onChange={handleSwitchChange('nfpp')} color="primary" size="small" />}
-                  label={<Typography variant="body2">NFPP (No Fault Personal Protection)</Typography>}
-                  sx={{ ml: 0 }}
-                />
-              </Grid>
               {/* Additional Towing SI - shown when enabled */}
               {!!formData.additional_towing && (
                 <Grid item xs={12} sm={6} md={4}>
                   <TextField fullWidth size="small" type="number" label="Towing Charges SI (₹)" name="additional_towing_si"
-                    value={formData.additional_towing_si} onChange={handleChange}
-                    helperText="Sum insured for additional towing" />
+                    value={formData.additional_towing_si} onChange={(e) => {
+                      const val = Math.min(Number(e.target.value) || 0, 20000);
+                      setFormData((prev) => ({ ...prev, additional_towing_si: val }));
+                    }}
+                    inputProps={{ min: 0, max: 20000 }}
+                    helperText="Max ₹20,000 for GCV" />
                 </Grid>
               )}
             </Grid>
@@ -639,10 +679,28 @@ const GCVCalculator = () => {
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <TextField fullWidth size="small" type="number" label="LL to Paid Driver (Count)" name="ll_paid_driver"
-                  value={formData.ll_paid_driver} onChange={handleChange}
-                  inputProps={{ min: 0 }}
-                  helperText="Number of paid drivers (₹50 each)" />
+                <StepperInput
+                  label="LL to Paid Driver"
+                  value={formData.ll_paid_driver}
+                  onChange={(val) => setFormData((prev) => ({ ...prev, ll_paid_driver: val }))}
+                  helperText="₹50 per driver"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <StepperInput
+                  label="NFPP (Employee)"
+                  value={formData.nfpp_employee}
+                  onChange={(val) => setFormData((prev) => ({ ...prev, nfpp_employee: val }))}
+                  helperText="₹75 per passenger"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <StepperInput
+                  label="NFPP (Non-Employee)"
+                  value={formData.nfpp_non_employee}
+                  onChange={(val) => setFormData((prev) => ({ ...prev, nfpp_non_employee: val }))}
+                  helperText="₹75 per passenger"
+                />
               </Grid>
             </Grid>
           </CardContent>
@@ -748,7 +806,7 @@ const GCVCalculator = () => {
             <Grid item xs={6} sm={3}>
               <Card sx={{ ...cardSx, mb: 0 }}>
                 <CardContent sx={{ p: 2.5, textAlign: 'center' }}>
-                  <Typography variant="caption" sx={{ color: '#6e6e73', textTransform: 'uppercase', letterSpacing: '0.04em' }}>IGST OD (18%)</Typography>
+                  <Typography variant="caption" sx={{ color: '#6e6e73', textTransform: 'uppercase', letterSpacing: '0.04em' }}>IGST @18% - Others</Typography>
                   <Typography variant="h6" sx={{ fontWeight: 700, color: '#1d1d1f', mt: 0.5 }}>
                     {formatCurrency(result.calculations.igst_od)}
                   </Typography>
@@ -814,6 +872,8 @@ const GCVCalculator = () => {
                       <TableRow><TableCell>AK</TableCell><TableCell>CPA Owner Driver (SI – ₹15L)</TableCell><TableCell align="right">{formatCurrency(result.calculations.cpa_owner_premium)}</TableCell></TableRow>
                       <TableRow><TableCell>AL</TableCell><TableCell>LL to Paid Driver</TableCell><TableCell align="right">{formatCurrency(result.calculations.ll_paid_driver_premium)}</TableCell></TableRow>
                       <TableRow><TableCell>AM</TableCell><TableCell>CNG/LPG TP</TableCell><TableCell align="right">{formatCurrency(result.calculations.cng_lpg_tp_premium)}</TableCell></TableRow>
+                      <TableRow><TableCell></TableCell><TableCell>NFPP (Employee)</TableCell><TableCell align="right">{formatCurrency(result.calculations.nfpp_employee_premium)}</TableCell></TableRow>
+                      <TableRow><TableCell></TableCell><TableCell>NFPP (Non-Employee)</TableCell><TableCell align="right">{formatCurrency(result.calculations.nfpp_non_employee_premium)}</TableCell></TableRow>
 
                       {/* Discounts & Final */}
                       <TableRow><TableCell colSpan={3} sx={{ bgcolor: '#f5f5f7', fontWeight: 600, fontSize: '0.8rem', py: 1 }}>Discounts & Final</TableCell></TableRow>
@@ -821,7 +881,7 @@ const GCVCalculator = () => {
                       <TableRow><TableCell>AO</TableCell><TableCell>NCB Discount</TableCell><TableCell align="right" sx={{ color: '#FF3B30' }}>-{formatCurrency(result.calculations.ncb_discount_amount)}</TableCell></TableRow>
                       <TableRow><TableCell>AP</TableCell><TableCell sx={{ fontWeight: 600 }}>Net OD Premium</TableCell><TableCell align="right" sx={{ fontWeight: 600 }}>{formatCurrency(result.calculations.net_od_premium)}</TableCell></TableRow>
                       <TableRow><TableCell>AQ</TableCell><TableCell sx={{ fontWeight: 600 }}>Net TP Premium</TableCell><TableCell align="right" sx={{ fontWeight: 600 }}>{formatCurrency(result.calculations.net_tp_premium)}</TableCell></TableRow>
-                      <TableRow><TableCell>AR</TableCell><TableCell>IGST on OD @18%</TableCell><TableCell align="right">{formatCurrency(result.calculations.igst_od)}</TableCell></TableRow>
+                      <TableRow><TableCell>AR</TableCell><TableCell>IGST @18% - Others</TableCell><TableCell align="right">{formatCurrency(result.calculations.igst_od)}</TableCell></TableRow>
                       <TableRow><TableCell>AS</TableCell><TableCell>IGST on TP @5%</TableCell><TableCell align="right">{formatCurrency(result.calculations.igst_tp)}</TableCell></TableRow>
                       <TableRow sx={{ bgcolor: 'rgba(0,102,204,0.06)' }}>
                         <TableCell>AT</TableCell>
