@@ -5,6 +5,6 @@
     { "gvw_min": 7501, "gvw_max": 12000, "premium": 27186 },
     { "gvw_min": 12001, "gvw_max": 20000, "premium": 35313 },
     { "gvw_min": 20001, "gvw_max": 40000, "premium": 43950 },
-    { "gvw_min": 40001, "gvw_max": 9999999, "premium": 44242 }
+    { "gvw_min": 40001, "gvw_max": 999999, "premium": 44242 }
   ]
 }
